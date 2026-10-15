@@ -1,9 +1,10 @@
 {
   "name": "netease-music-adblock",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Ad-blocking rewrite script for NetEase Cloud Music on Shadowrocket / Surge / Loon / Quantumult X",
   "private": true,
   "scripts": {
+    "build": "node tools/build.mjs",
     "test": "node --test test/*.test.cjs",
     "test:watch": "node --test --watch test/*.test.cjs"
   },

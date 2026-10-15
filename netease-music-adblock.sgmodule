@@ -1,5 +1,5 @@
-#!name = 网易云音乐去广告 v1.0.6
-#!desc = [v1.0.6] 屏蔽网易云音乐 App 的开屏/弹窗/信息流/评论区/侧栏广告与推广位。双层：URL Rewrite（免 MITM）+ Script（需 MITM）。仅去广告，不解锁 VIP。 / [v1.0.6] Removes NetEase Cloud Music ads. Two layers: URL Rewrite (no MITM needed) + Script (needs MITM). Ad removal only.
+#!name = 网易云音乐去广告 v1.0.7
+#!desc = [v1.0.7] 屏蔽网易云音乐 App 的开屏/弹窗/信息流/评论区/侧栏广告与推广位。双层：URL Rewrite（免 MITM）+ Script（需 MITM）。仅去广告，不解锁 VIP。 / [v1.0.7] Removes NetEase Cloud Music ads. Two layers: URL Rewrite (no MITM needed) + Script (needs MITM). Ad removal only.
 #!author = socamalo
 #!homepage = https://github.com/socamalo/netease-music-adblock
 #!icon = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netease_Music.png
@@ -7,7 +7,7 @@
 #!raw-url = https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-music-adblock.sgmodule
 #!category = 去广告
 #!date = 2026-10-15
-#!version = 1.0.6
+#!version = 1.0.7
 
 
 [Rule]
@@ -102,6 +102,7 @@ netease.search = type=http-response,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\
 
 # 评论区插入推广 + /batch 聚合接口 / Comment-area injections + the /batch aggregate
 netease.comments = type=http-response,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/(?:[a-z]*api)\/(?:batch|v\d\/resource\/comment\/floor\/get|comment\/feed\/inserted|resource\/comments\/musiciansaid|music\/songshare\/|community\/friends\/|v\d\/content\/exposure\/|song\/play\/more\/list\/v\d|ios\/(?:version|upgrade\/get)),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/js/netease-adblock.js,timeout=15
+
 
 
 [MITM]

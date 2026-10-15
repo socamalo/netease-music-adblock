@@ -1,0 +1,33 @@
+#!name = 网易云音乐 · 内容过滤器 v1.0.7
+#!desc = [可选增强] 按内容删除推广条目：解密后的正文里出现禁用字符串，就把包含它的条目整个删掉。不看接口、不看结构。独立模块 —— 出问题直接在模块列表里关掉/删掉，主模块不受影响。 / [OPTIONAL] Removes promo entries by content: if a banned string appears in the decrypted payload, the entry carrying it is dropped. Endpoint- and shape-agnostic. SHIPPED SEPARATELY so it can be disabled or deleted on its own without touching the main module.
+#!author = socamalo
+#!homepage = https://github.com/socamalo/netease-music-adblock
+#!icon = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netease_Music.png
+#!url = https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-content-filter.sgmodule
+#!category = 去广告
+#!date = 2026-10-15
+#!version = 1.0.7
+#!arguments = 禁用字符串:云贝免费领取现金红包
+#!arguments-desc = 禁用字符串：用 | 分隔多个。默认「云贝免费领取现金红包」。\n\n只用完整字符串，不要用「云贝」这类短词 —— 太常见会把正常内容也删掉。
+
+# ------------------------------------------------------------------ #
+# 为什么是独立模块
+#
+# 这一条会路由**所有**网易云接口，覆盖面最大、也最激进。
+# 独立成模块的好处是「一键摘除」：万一它导致异常，在 Shadowrocket 的
+# 模块列表里把它关掉或删掉即可，主模块的开屏/广告拦截完全不受影响。
+#
+# Why this ships as its own module
+#
+# It routes EVERY NetEase API call, which is the most aggressive thing here.
+# Keeping it separate means one-tap removal: if it ever misbehaves, disable or
+# delete this module alone and the main ad blocking is untouched.
+# ------------------------------------------------------------------ #
+
+[Script]
+netease.content = type=http-response,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/[a-z]*api\/,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/js/content-filter.js,argument="{{{禁用字符串}}}",timeout=15
+
+
+[MITM]
+# %APPEND% 必需：没有它，这个模块会覆盖你配置文件里已有的 hostname 列表。
+hostname = %APPEND% music.163.com, *.music.163.com

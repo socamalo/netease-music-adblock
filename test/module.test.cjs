@@ -170,7 +170,7 @@ test('patterns cover the web (weapi) host as well as the app host', () => {
   assert.ok(covered('https://ipv4.music.163.com/api/ad/get'));
 });
 
-test('patterns do not accidentally swallow playback or login traffic', () => {
+test('the main module never swallows playback or login traffic', () => {
   const mustNotMatch = [
     'https://interface3.music.163.com/eapi/song/enhance/player/url/v1',
     'https://interface3.music.163.com/eapi/login/cellphone',
@@ -178,7 +178,45 @@ test('patterns do not accidentally swallow playback or login traffic', () => {
     'https://music.163.com/weapi/song/enhance/player/url/v1',
   ];
   for (const url of mustNotMatch) {
-    assert.ok(!covered(url), `pattern should not match core traffic: ${url}`);
+    assert.ok(!covered(url), `main module should not match core traffic: ${url}`);
+  }
+});
+
+/* ----------------------------------------- optional content-filter module --- */
+
+const FILTER_MODULE = path.join(ROOT, 'netease-content-filter.sgmodule');
+const filterSource = fs.existsSync(FILTER_MODULE)
+  ? fs.readFileSync(FILTER_MODULE, 'utf8')
+  : '';
+
+test('the content filter ships as its own module, not inside the main one', () => {
+  // One-tap removal is the whole point: if it misbehaves, deleting this module
+  // must leave the main ad blocking completely untouched.
+  assert.ok(filterSource, 'netease-content-filter.sgmodule should exist');
+  assert.ok(!source.includes('content-filter.js'),
+    'the main module must not reference the content filter');
+  assert.ok(filterSource.includes('content-filter.js'),
+    'the filter module should load content-filter.js');
+});
+
+test('the filter module routes all api traffic and keeps %APPEND%', () => {
+  const section = filterSource.split('[Script]')[1].split('[MITM]')[0];
+  const entries = section.split('\n').filter((l) => l.includes('content-filter.js'));
+  assert.strictEqual(entries.length, 1, 'exactly one entry should load the filter');
+  assert.ok(entries[0].includes('binary-body-mode=1'));
+
+  const mitm = filterSource.split('[MITM]')[1];
+  assert.ok(mitm.includes('%APPEND%'), 'must not clobber the hostname list');
+});
+
+test('the filter script guards login and playback paths', () => {
+  // Routing every api call is intentional but puts login and playback inside the
+  // blast radius, so the script itself must refuse to touch them.
+  const src = fs.readFileSync(path.join(ROOT, 'js', 'content-filter.js'), 'utf8');
+  assert.match(src, /NEVER_TOUCH/, 'content filter must declare NEVER_TOUCH');
+  assert.match(src, /isProtected/, 'content filter must enforce the guard');
+  for (const frag of ['/login/', '/song/enhance/player/url', '/song/lyric']) {
+    assert.ok(src.includes(frag), `guard should cover ${frag}`);
   }
 });
 

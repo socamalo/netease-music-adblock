@@ -4,7 +4,7 @@
 > A dedicated ad-blocking rewrite script for **NetEase Cloud Music**, for Shadowrocket / Surge / Loon / Quantumult X.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-70%20passing-brightgreen.svg)](#开发与测试--development)
+[![Tests](https://img.shields.io/badge/tests-83%20passing-brightgreen.svg)](#开发与测试--development)
 
 **中文** | [English](#english)
 
@@ -117,6 +117,55 @@ var PROMO_ITEM_KEYWORDS = ['云贝'];
 
 **规律**：`看起来是广告的接口` ≠ `拦掉它就干净了`，也 ≠ `广告只从那里来`。要顺着「屏幕上这个东西是谁画出来的」往上找。
 
+## 通用内容过滤器（可选，独立模块）/ Universal content kill-filter
+
+最后一个可选增强：**不看接口、不看 JSON 结构，只按内容判断**。
+
+```js
+// 解密后的正文里出现完整禁用串 → 把包含它的那个条目整个删掉
+var BANNED = ['云贝免费领取现金红包'];
+```
+
+### 为什么独立成一个模块
+
+它要路由**所有**网易云接口 —— 覆盖面最大、也最激进。所以它**不在主模块里**，而是单独一个 `.sgmodule`：
+
+**出问题就在 Shadowrocket 的模块列表里把它关掉或删掉，主模块的开屏/广告拦截完全不受影响。** 一键摘除，不用改任何代码。
+
+```
+主模块      netease-music-adblock.sgmodule   ← 开屏、广告、推广位（稳）
+可选增强    netease-content-filter.sgmodule  ← 按内容删条目（激进，可单独摘）
+```
+
+加装（可选）：
+
+```
+https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-content-filter.sgmodule
+```
+
+### 为什么做成结构无关的
+
+那张「云贝」卡片**已经换过一次接口**：先以为是云贝族接口，全拦了没用；后来才发现在首页信息流里。写死接口或 JSON 路径的方案会跟着坏 —— 按内容删，接口怎么换都不影响。
+
+### 安全设计
+
+| 设计 | 原因 |
+|---|---|
+| **只用完整字符串** | 「云贝」这种短词太常见，会把「云贝商城」也删掉 |
+| **自底向上删除** | 反过来会删掉整个块而不是那一个条目（第一版就是这么错的，测试当场抓到）|
+| **只删小于 4 KB 的条目** | 防止误删大容器 |
+| **登录 / 播放 / 歌词路径一律不碰** | 它路由所有接口，万一改坏那些响应会登不上或放不出歌 |
+| **没删到东西就原样返回** | 零副作用，不重新编码 |
+| **模块内 `try/catch` 兜底** | 任何异常都 `$done({})` 原样放行，不会让 App 白屏 |
+
+**改禁用词**：模块的「禁用字符串」参数里填，多个用 `|` 分隔。
+
+### `js/content-filter.js` 是生成的
+
+它需要和主脚本**同一套 AES/解码内核**。手抄一份两边会漂移（这个项目已经因为版本不一致吃过一次亏），所以由 `npm run build` 从主脚本内核 + `src/content-filter.main.js` 生成。
+
+**产物是纯 JS，给 JSC 跑的** —— 没有 `require`、没有 `import`、没有任何 Node 依赖。构建只发生在开发机上，设备里没有 Node。
+
 ## ⚠️ 拦「内容」不够，要连「容器」一起拦
 
 一个容易踩的坑，用真实案例说明。
@@ -204,8 +253,9 @@ var PROMO_ITEM_KEYWORDS = ['云贝'];
 整个仓库**只有 JavaScript，没有 Python**。脚本本身零依赖，不带 CryptoJS，也不从 CDN 拉任何东西 —— 网易云音乐运行脚本的环境里只有 JS 引擎，AES 是脚本自己实现的。
 
 ```bash
-npm test             # 70 个测试
+npm test             # 83 个测试
 npm run test:watch   # 保存即跑
+npm run build        # 由内核生成 js/content-filter.js
 ```
 
 测试用 Node 内置 test runner，**零依赖**（Node 只是本地开发工具，和 App 里跑什么无关）：
@@ -225,7 +275,7 @@ npm run test:watch   # 保存即跑
 | 纯 JS AES-128-ECB 与 **OpenSSL** 对拍 200 组随机密钥 | ✅ 200/200 一致 |
 | AES 通过 **NIST FIPS-197** 标准测试向量 | ✅ |
 | 能解密 **pycryptodome** 加密的网易云载荷 | ✅ 全部字节一致 |
-| 规则引擎、端到端流程（明文 / 密文 / gzip / QuanX） | ✅ 70 个测试全绿 |
+| 规则引擎、端到端流程（明文 / 密文 / gzip / QuanX） | ✅ 83 个测试全绿 |
 | 模块正则覆盖脚本所有路径 | ✅ 自动校验 |
 | **在真机 Shadowrocket 上的实际效果** | ⚠️ **未验证** |
 
@@ -347,7 +397,7 @@ It ships its own ~4 KB pure-JS AES-128-ECB instead of inlining CryptoJS (~120 KB
 **This repository contains JavaScript only — there is no Python anywhere.** The script itself has zero dependencies: it does not bundle CryptoJS and fetches nothing from a CDN, because the environment the rewrite runs in is a bare JS engine. AES is implemented in the script itself.
 
 ```bash
-npm test    # 70 tests, zero dependencies (Node's built-in runner)
+npm test    # 83 tests, zero dependencies (Node's built-in runner)
 ```
 
 Node is a local development tool and has nothing to do with what runs inside the app.
