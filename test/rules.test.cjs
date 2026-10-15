@@ -173,6 +173,47 @@ test('discovery page drops PAGE_DISCOVERY_BANNER', () => {
   assert.deepStrictEqual(JSON.parse(out.data.blockCodeOrderList), ['PAGE_DISCOVERY_SOMETHING']);
 });
 
+test('stripPromoItems removes a 云贝 item nested inside real content', () => {
+  // The card is not served by a yunbei endpoint -- it ships as one item inside
+  // the home feed, so block-level whitelisting alone kept it alive.
+  const body = { data: { blocks: [{ bizCode: 'PAGE_RECOMMEND_SHORTCUT', dslData: {
+    x: { commonResourceList: [
+      { title: '每日推荐', actionUrl: 'orpheus://x' },
+      { title: '云贝免费领取现金红包', actionUrl: 'orpheus://promo' },
+      { title: '我喜欢的音乐' },
+    ] } } }] } };
+  M.stripPromoItems(body, 0);
+  const list = body.data.blocks[0].dslData.x.commonResourceList;
+  assert.deepStrictEqual(list.map((i) => i.title), ['每日推荐', '我喜欢的音乐']);
+});
+
+test('stripPromoItems keeps legitimate content whose title is unrelated', () => {
+  const body = { data: { songs: [
+    { name: '云想衣裳', title: '云想衣裳' },
+    { name: '普通歌曲', title: '普通歌曲' },
+  ] } };
+  M.stripPromoItems(body, 0);
+  assert.strictEqual(body.data.songs.length, 2, 'must not over-remove');
+});
+
+test('stripPromoItems handles arrays of arrays and missing fields', () => {
+  assert.doesNotThrow(() => M.stripPromoItems({ a: [[{ title: '' }], null, 5] }, 0));
+  const out = M.stripPromoItems({ a: [[{ title: '云贝' }], [{ title: 'ok' }]] }, 0);
+  assert.deepStrictEqual(out.a[0], []);
+  assert.deepStrictEqual(out.a[1].map((x) => x.title), ['ok']);
+});
+
+test('stripPromoItems is depth-guarded against pathological nesting', () => {
+  let node = { title: '云贝' };
+  for (let i = 0; i < 40; i++) node = { nested: node };
+  assert.doesNotThrow(() => M.stripPromoItems(node, 0));
+});
+
+test('/link/home/framework/top/tab is handled, not passed through', () => {
+  // Observed on the device but absent from the rule table until now.
+  assert.deepStrictEqual(M.classify('/link/home/framework/top/tab'), { action: 'script' });
+});
+
 test('a malformed blockCodeOrderList is left alone rather than thrown', () => {
   const body = { data: { blockCodeOrderList: 'not json{' } };
   assert.doesNotThrow(() => M.applyScript('/link/page/discovery/resource/show', body));

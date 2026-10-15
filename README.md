@@ -4,7 +4,7 @@
 > A dedicated ad-blocking rewrite script for **NetEase Cloud Music**, for Shadowrocket / Surge / Loon / Quantumult X.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-64%20passing-brightgreen.svg)](#开发与测试--development)
+[![Tests](https://img.shields.io/badge/tests-70%20passing-brightgreen.svg)](#开发与测试--development)
 
 **中文** | [English](#english)
 
@@ -89,6 +89,33 @@ Shadowrocket → **配置** → **模块** → 右上角 **➕** → 粘贴上�
 > 这条对**所有**去广告复写都成立，不只是本项目。任何广告只要被预缓存过，装模块当次都不会立刻见效。
 
 ---
+
+## ⚠️ 更隐蔽的坑：促销条目藏在**正常内容里面**
+
+云贝那张卡片最终是怎么解决的，值得单独记一笔 —— 因为它推翻了我前面的判断。
+
+**先走的弯路**：我查日志发现云贝族有 9 个接口，于是按前缀把 `/yunbei/`、`/new/yunbei/`、`/yunbei-center/` **整族拦掉**。结果 —— **卡片照旧**。日志证明 21 条云贝请求全部拦下，一个不漏，但卡片还在。
+
+**真正的原因**：那张卡片**根本不是云贝接口渲染的**。它是**首页信息流里的一个条目**，跟着信息流一起下发。而我对首页信息流用的是**白名单**：
+
+```
+只保留 PAGE_RECOMMEND_* 这几个块 → 块保住了
+                                   ↓
+                          块里的「云贝」条目也跟着保住了
+```
+
+**我拦的是「块」，没拦「块里面的条目」。**
+
+**解法**：换成**按内容关键字剔除**，而不是猜结构 ——
+
+```js
+// 递归遍历，任何数组里标题含「云贝」的条目直接剔除
+var PROMO_ITEM_KEYWORDS = ['云贝'];
+```
+
+这样**不依赖接口、不依赖字段名、不依赖层级**。之所以刻意做成「结构无关」，是因为这张卡片**已经换过一次接口了** —— 写死结构的方案会再坏一次。
+
+**规律**：`看起来是广告的接口` ≠ `拦掉它就干净了`，也 ≠ `广告只从那里来`。要顺着「屏幕上这个东西是谁画出来的」往上找。
 
 ## ⚠️ 拦「内容」不够，要连「容器」一起拦
 
@@ -177,7 +204,7 @@ Shadowrocket → **配置** → **模块** → 右上角 **➕** → 粘贴上�
 整个仓库**只有 JavaScript，没有 Python**。脚本本身零依赖，不带 CryptoJS，也不从 CDN 拉任何东西 —— 网易云音乐运行脚本的环境里只有 JS 引擎，AES 是脚本自己实现的。
 
 ```bash
-npm test             # 64 个测试
+npm test             # 70 个测试
 npm run test:watch   # 保存即跑
 ```
 
@@ -198,7 +225,7 @@ npm run test:watch   # 保存即跑
 | 纯 JS AES-128-ECB 与 **OpenSSL** 对拍 200 组随机密钥 | ✅ 200/200 一致 |
 | AES 通过 **NIST FIPS-197** 标准测试向量 | ✅ |
 | 能解密 **pycryptodome** 加密的网易云载荷 | ✅ 全部字节一致 |
-| 规则引擎、端到端流程（明文 / 密文 / gzip / QuanX） | ✅ 64 个测试全绿 |
+| 规则引擎、端到端流程（明文 / 密文 / gzip / QuanX） | ✅ 70 个测试全绿 |
 | 模块正则覆盖脚本所有路径 | ✅ 自动校验 |
 | **在真机 Shadowrocket 上的实际效果** | ⚠️ **未验证** |
 
@@ -320,7 +347,7 @@ It ships its own ~4 KB pure-JS AES-128-ECB instead of inlining CryptoJS (~120 KB
 **This repository contains JavaScript only — there is no Python anywhere.** The script itself has zero dependencies: it does not bundle CryptoJS and fetches nothing from a CDN, because the environment the rewrite runs in is a bare JS engine. AES is implemented in the script itself.
 
 ```bash
-npm test    # 64 tests, zero dependencies (Node's built-in runner)
+npm test    # 70 tests, zero dependencies (Node's built-in runner)
 ```
 
 Node is a local development tool and has nothing to do with what runs inside the app.

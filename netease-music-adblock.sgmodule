@@ -1,5 +1,5 @@
-#!name = 网易云音乐去广告 v1.0.5
-#!desc = [v1.0.5] 屏蔽网易云音乐 App 的开屏/弹窗/信息流/评论区/侧栏广告与推广位。双层：URL Rewrite（免 MITM）+ Script（需 MITM）。仅去广告，不解锁 VIP。 / [v1.0.5] Removes NetEase Cloud Music ads. Two layers: URL Rewrite (no MITM needed) + Script (needs MITM). Ad removal only.
+#!name = 网易云音乐去广告 v1.0.6
+#!desc = [v1.0.6] 屏蔽网易云音乐 App 的开屏/弹窗/信息流/评论区/侧栏广告与推广位。双层：URL Rewrite（免 MITM）+ Script（需 MITM）。仅去广告，不解锁 VIP。 / [v1.0.6] Removes NetEase Cloud Music ads. Two layers: URL Rewrite (no MITM needed) + Script (needs MITM). Ad removal only.
 #!author = socamalo
 #!homepage = https://github.com/socamalo/netease-music-adblock
 #!icon = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netease_Music.png

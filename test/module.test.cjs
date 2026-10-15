@@ -153,6 +153,10 @@ test('the version is visible in the module name so a stale copy is obvious', () 
   assert.ok(name.includes(v), `#!name should carry the version (${v}) so the installed build is identifiable`);
 });
 
+test('patterns cover link/home/framework/top/tab seen on the device', () => {
+  assert.ok(covered('https://interface3.music.163.com/xeapi/link/home/framework/top/tab'));
+});
+
 test('patterns cover the plaintext http:// scheme the app also uses', () => {
   // Observed on the device as http:// rather than https://, so ^https?: matters.
   assert.ok(covered('http://interface3.music.163.com/eapi/ad/loading/current'));

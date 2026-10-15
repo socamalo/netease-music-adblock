@@ -15,7 +15,7 @@
  *     Blocking ads is the same thing a browser ad-blocker does; forging a VIP expiry
  *     is circumventing payment, and is out of scope.
  *
- * @version   1.0.5
+ * @version   1.0.6
  * @license   MIT
  */
 
@@ -355,6 +355,7 @@ var PREFIX_EMPTY = [
 var SCRIPT_PATHS = {
   '/batch': 1,
   '/link/home/framework/tab': 1,
+  '/link/home/framework/top/tab': 1,
   '/link/page/discovery/resource/show': 1,
   '/link/page/rcmd/resource/show': 1,
   '/link/page/rcmd/block/resource/multi/refresh': 1,
@@ -394,6 +395,50 @@ function isKeptBlock(code) {
 
 function filterArrayBy(arr, keep) {
   return arr.filter(function (item) { return keep(item); });
+}
+
+/**
+ * Promo entries that live *inside* otherwise legitimate content.
+ *
+ * The Yunbei (云贝) card is the worked example: it is not served by any yunbei
+ * endpoint -- the whole yunbei family was already blocked and the card survived.
+ * It ships as one item inside the home feed, so block-level filtering keeps it.
+ *
+ * Rather than guess the item's shape, walk the tree and drop any array element
+ * whose title-ish fields carry a promo keyword. Shape-agnostic on purpose: the
+ * card has already changed endpoints once.
+ */
+var PROMO_ITEM_KEYWORDS = ['云贝'];
+
+function isPromoItem(node) {
+  if (!node || typeof node !== 'object') return false;
+  var fields = [node.title, node.subTitle, node.actionTitle, node.summary, node.name];
+  for (var i = 0; i < fields.length; i++) {
+    var v = fields[i];
+    if (typeof v !== 'string' || !v) continue;
+    for (var k = 0; k < PROMO_ITEM_KEYWORDS.length; k++) {
+      if (v.indexOf(PROMO_ITEM_KEYWORDS[k]) !== -1) return true;
+    }
+  }
+  return false;
+}
+
+function stripPromoItems(node, depth) {
+  if (!node || typeof node !== 'object') return node;
+  if ((depth || 0) > 12) return node;              // guard against pathological nesting
+  if (Array.isArray(node)) {
+    var kept = [];
+    for (var i = 0; i < node.length; i++) {
+      if (!isPromoItem(node[i])) kept.push(stripPromoItems(node[i], (depth || 0) + 1));
+    }
+    return kept;
+  }
+  for (var key in node) {
+    if (Object.prototype.hasOwnProperty.call(node, key)) {
+      node[key] = stripPromoItems(node[key], (depth || 0) + 1);
+    }
+  }
+  return node;
 }
 
 /**
@@ -535,7 +580,9 @@ function applyScript(path, body) {
     case '/batch':
       return handleBatch(body);
 
+    case '/link/home/framework/top/tab':
     case '/link/home/framework/tab':
+      body = stripPromoItems(body, 0);
       if (body.data && body.data.commonResourceList) {
         body.data.commonResourceList = filterArrayBy(body.data.commonResourceList, function (r) {
           return r && r.title !== '漫游' && r.title !== '笔记';
@@ -562,6 +609,7 @@ function applyScript(path, body) {
       return body;
 
     case '/link/page/rcmd/resource/show':
+      body = stripPromoItems(body, 0);
       if (body.data) {
         if (body.data.blocks) {
           body.data.blocks = filterArrayBy(body.data.blocks, function (b) {
@@ -596,6 +644,7 @@ function applyScript(path, body) {
       return body;
 
     case '/link/position/show/resource':
+      body = stripPromoItems(body, 0);
       if (body.data && body.data.crossPlatformResource &&
           body.data.crossPlatformResource.positionCode === 'MyPageBar') {
         body.data.crossPlatformResource = {};
@@ -603,6 +652,7 @@ function applyScript(path, body) {
       return body;
 
     case '/homepage/block/page':
+      body = stripPromoItems(body, 0);
       if (body.data && body.data.blocks) {
         for (var j = 0; j < body.data.blocks.length; j++) {
           var blk = body.data.blocks[j];
@@ -828,6 +878,8 @@ if (typeof module !== 'undefined' && module.exports) {
     applyScript: applyScript,
     handleBatch: handleBatch,
     handleCommentList: handleCommentList,
+    stripPromoItems: stripPromoItems,
+    isPromoItem: isPromoItem,
     utf8ToBytes: utf8ToBytes,
     bytesToUtf8: bytesToUtf8,
     toBytes: toBytes,
