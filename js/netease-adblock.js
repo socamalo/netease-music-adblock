@@ -15,7 +15,7 @@
  *     Blocking ads is the same thing a browser ad-blocker does; forging a VIP expiry
  *     is circumventing payment, and is out of scope.
  *
- * @version   1.0.2
+ * @version   1.0.3
  * @license   MIT
  */
 
@@ -480,11 +480,19 @@ function handleCommentList(container) {
  * Core dispatch
  * ------------------------------------------------------------------ */
 
+/**
+ * NetEase ships several API flavours behind different path prefixes: /api/,
+ * /eapi/, /weapi/ and -- as of recent app builds -- /xeapi/. Matching a fixed
+ * list meant /xeapi/ slipped through entirely, so every rule silently did
+ * nothing for a whole class of requests. Match the prefix shape instead.
+ */
+var API_PREFIX = /\/(?:[a-z]{0,3}api)\/(.*)$/;
+
 function extractPath(url) {
   if (!url) return null;
   var q = url.indexOf('?');
   if (q >= 0) url = url.slice(0, q);
-  var m = /\/w?e?api\/(.*)$/.exec(url);
+  var m = API_PREFIX.exec(url);
   if (!m) return null;
   return '/' + m[1];
 }

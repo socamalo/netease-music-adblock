@@ -67,6 +67,25 @@ test('every path the script rewrites is reachable through a module pattern', () 
   assert.deepStrictEqual(uncovered, []);
 });
 
+test('patterns cover the /xeapi/ prefix a newer app build uses', () => {
+  // Regression guard: the module previously only matched api/eapi/weapi, so the
+  // whole script was dead for /xeapi/ traffic.
+  for (const url of [
+    'https://interface3.music.163.com/xeapi/ad/sniffing',
+    'https://interface3.music.163.com/xeapi/ad',
+    'https://interface.music.163.com/xeapi/batch',
+    'https://interface3.music.163.com/xeapi/link/home/framework/tab',
+  ]) {
+    assert.ok(covered(url), `no module pattern matches: ${url}`);
+  }
+});
+
+test('patterns cover the plaintext http:// scheme the app also uses', () => {
+  // Observed on the device as http:// rather than https://, so ^https?: matters.
+  assert.ok(covered('http://interface3.music.163.com/eapi/ad/loading/current'));
+  assert.ok(covered('http://interface3.music.163.com/xeapi/ad/sniffing'));
+});
+
 test('patterns cover the web (weapi) host as well as the app host', () => {
   assert.ok(covered('https://music.163.com/weapi/ad/loading/get'));
   assert.ok(covered('https://interface.music.163.com/eapi/ad/loading/get'));
@@ -83,6 +102,23 @@ test('patterns do not accidentally swallow playback or login traffic', () => {
   ];
   for (const url of mustNotMatch) {
     assert.ok(!covered(url), `pattern should not match core traffic: ${url}`);
+  }
+});
+
+/**
+ * The script entry is comma-delimited (type=...,pattern=...,requires-body=1,...).
+ * A comma inside a pattern silently splits it and breaks the module, so a
+ * quantifier like {0,3} is not safe here -- use [a-z]* instead.
+ */
+test('no pattern contains a comma, which would split the config line', () => {
+  const section = source.split('[Script]')[1].split('[MITM]')[0];
+  for (const line of section.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const m = trimmed.match(/pattern=([^,]*)/);
+    if (!m) continue;
+    assert.ok(!/\{\d+,\d+\}/.test(m[1]),
+      `pattern uses a comma-bearing quantifier and will be split by the parser: ${m[1]}`);
   }
 });
 

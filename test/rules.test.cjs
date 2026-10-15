@@ -67,6 +67,35 @@ const decryptToJson = (bytes) => JSON.parse(Buffer.from(AES.decrypt(bytes)).toSt
 
 /* ---------------------------------------------------------------- path */
 
+test('extractPath handles every API prefix the app has used', () => {
+  // /xeapi/ was added by a newer app build and slipped past the original
+  // fixed list, which made every rule a silent no-op for those requests.
+  const cases = {
+    '/api/ad/sniffing': '/ad/sniffing',
+    '/eapi/ad/sniffing': '/ad/sniffing',
+    '/weapi/ad/sniffing': '/ad/sniffing',
+    '/xeapi/ad/sniffing': '/ad/sniffing',
+    '/xeapi/ad': '/ad',
+    '/eapi/ad': '/ad',
+  };
+  for (const [suffix, expected] of Object.entries(cases)) {
+    const url = `https://interface3.music.163.com${suffix}`;
+    assert.strictEqual(M.extractPath(url), expected, url);
+  }
+});
+
+test('the real splash-ad requests from the device log are blanked', () => {
+  // Captured from Shadowrocket while a Tmall 双11 splash ad was showing.
+  for (const url of [
+    'https://interface3.music.163.com/xeapi/ad/sniffing',
+    'https://interface3.music.163.com/eapi/ad/sniffing',
+    'https://interface3.music.163.com/xeapi/ad',
+  ]) {
+    const path = M.extractPath(url);
+    assert.deepStrictEqual(M.classify(path), { action: 'empty' }, url);
+  }
+});
+
 test('extractPath normalises api/eapi/weapi and drops the query', () => {
   assert.strictEqual(
     M.extractPath('https://interface3.music.163.com/eapi/link/home/framework/tab'),

@@ -4,7 +4,7 @@
 > A dedicated ad-blocking rewrite script for **NetEase Cloud Music**, for Shadowrocket / Surge / Loon / Quantumult X.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-52%20passing-brightgreen.svg)](#开发与测试--development)
+[![Tests](https://img.shields.io/badge/tests-57%20passing-brightgreen.svg)](#开发与测试--development)
 
 **中文** | [English](#english)
 
@@ -98,7 +98,12 @@ Shadowrocket → **配置** → **模块** → 右上角 **➕** → 粘贴上�
 |------|------|--------|
 | `api` | `/api/...` | 明文 JSON |
 | `eapi` | `/eapi/...` | **AES-128-ECB 加密的二进制流** |
+| `xeapi` | `/xeapi/...` | 新版 App 使用的另一种前缀，同样加密 |
 | `weapi` | `/weapi/...` | 双层 AES-CBC + RSA（网页版） |
+
+> ⚠️ **路径前缀会变。** `/xeapi/` 是较新版本 App 引入的，一开始没被覆盖，导致**所有规则对 App 静默失效**。现在匹配的是「前缀形态」而不是固定列表，将来再加新前缀也不用改。
+>
+> 另外注意：这些接口**明文 `http://` 和 `https://` 都会出现**，所以匹配用的是 `^https?://`。
 
 脚本的处理流程：
 
@@ -131,7 +136,7 @@ Shadowrocket → **配置** → **模块** → 右上角 **➕** → 粘贴上�
 整个仓库**只有 JavaScript，没有 Python**。脚本本身零依赖，不带 CryptoJS，也不从 CDN 拉任何东西 —— 网易云音乐运行脚本的环境里只有 JS 引擎，AES 是脚本自己实现的。
 
 ```bash
-npm test             # 52 个测试
+npm test             # 57 个测试
 npm run test:watch   # 保存即跑
 ```
 
@@ -152,7 +157,7 @@ npm run test:watch   # 保存即跑
 | 纯 JS AES-128-ECB 与 **OpenSSL** 对拍 200 组随机密钥 | ✅ 200/200 一致 |
 | AES 通过 **NIST FIPS-197** 标准测试向量 | ✅ |
 | 能解密 **pycryptodome** 加密的网易云载荷 | ✅ 全部字节一致 |
-| 规则引擎、端到端流程（明文 / 密文 / gzip / QuanX） | ✅ 52 个测试全绿 |
+| 规则引擎、端到端流程（明文 / 密文 / gzip / QuanX） | ✅ 57 个测试全绿 |
 | 模块正则覆盖脚本所有路径 | ✅ 自动校验 |
 | **在真机 Shadowrocket 上的实际效果** | ⚠️ **未验证** |
 
@@ -274,7 +279,7 @@ It ships its own ~4 KB pure-JS AES-128-ECB instead of inlining CryptoJS (~120 KB
 **This repository contains JavaScript only — there is no Python anywhere.** The script itself has zero dependencies: it does not bundle CryptoJS and fetches nothing from a CDN, because the environment the rewrite runs in is a bare JS engine. AES is implemented in the script itself.
 
 ```bash
-npm test    # 52 tests, zero dependencies (Node's built-in runner)
+npm test    # 57 tests, zero dependencies (Node's built-in runner)
 ```
 
 Node is a local development tool and has nothing to do with what runs inside the app.
