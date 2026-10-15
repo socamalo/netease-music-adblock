@@ -15,7 +15,7 @@
  *     Blocking ads is the same thing a browser ad-blocker does; forging a VIP expiry
  *     is circumventing payment, and is out of scope.
  *
- * @version   1.0.7
+ * @version   1.0.5
  * @license   MIT
  */
 

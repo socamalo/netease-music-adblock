@@ -1,6 +1,6 @@
 {
   "name": "netease-music-adblock",
-  "version": "1.0.7",
+  "version": "1.0.5",
   "description": "Ad-blocking rewrite script for NetEase Cloud Music on Shadowrocket / Surge / Loon / Quantumult X",
   "private": true,
   "scripts": {
