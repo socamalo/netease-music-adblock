@@ -734,7 +734,7 @@ function applyScript(path, body) {
  * so its version is not comparable to the main module's. Bumped whenever this
  * file changes, and asserted to match the module's #!version by the test suite.
  */
-var FILTER_VERSION = '1.0.5';
+var FILTER_VERSION = '1.0.6';
 
 // ------------------------------------------------------------------ //
 // 临时存活探测 / TEMPORARY liveness probe
@@ -798,9 +798,17 @@ function markNav(node, depth) {
 // 禁用字符串。模块的「禁用字符串」参数可以覆盖（用 | 分隔多个）。
 // Full-string matches only: 「云贝」 on its own is a feature name and appears in
 // legitimate content, so a short word here would remove things it should not.
-var BANNED = (typeof $argument !== 'undefined' && $argument)
-  ? String($argument).split('|').map(function (s) { return s.trim(); }).filter(Boolean)
-  : ['云贝免费领取现金红包'];
+// 写死，不用模块模板参数。
+//
+// 之前用 `argument="{{{禁用字符串}}}"` 传进来：模板一旦没被解析，$argument 就是
+// 字面量「{{{禁用字符串}}}」，禁用字符串随之变成那串占位符 —— 永远匹配不到东西，
+// 而且没有任何报错。核心参数不该交给一个未经验证的模板机制。要改直接改这里。
+//
+// Hard-coded rather than fed through a module template argument. An unresolved
+// template would leave $argument as the literal placeholder text, silently
+// making the banned string match nothing. Core parameters do not belong behind
+// an unverified templating layer.
+var BANNED = ['云贝免费领取现金红包'];
 
 var MAX_ENTRY = 4096;   // 大于此字节数的对象不整体删除，防止误删大容器
 var MAX_DEPTH = 14;

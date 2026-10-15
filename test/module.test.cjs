@@ -199,17 +199,30 @@ test('the content filter ships as its own module, not inside the main one', () =
     'the filter module should load content-filter.js');
 });
 
-test('the filter script entry pins engine=jsc', () => {
-  // Documented behaviour: for http-request / http-response types, an unspecified
-  // or `auto` engine resolves to the WebView engine, not JSC. That is a
-  // different execution environment, and the reference module we were given
-  // (YouTubeAd) pins it explicitly. Leaving it unset is what this guards against.
+test('the filter script entry carries no templated argument', () => {
+  // The entry previously passed the banned string via
+  // `argument="{{{禁用字符串}}}"`. If Shadowrocket does not resolve the template,
+  // $argument is the literal placeholder text and the banned string becomes
+  // "{{{禁用字符串}}}" -- matching nothing, with no error anywhere. A core
+  // parameter should not sit behind an unverified templating layer.
   const entry = sectionOf(filterSource, '[Script]')
     .split('\n').map((l) => l.trim())
     .filter((l) => l && !l.startsWith('#'))[0];
   assert.ok(entry, 'no script entry found');
-  assert.match(entry, /engine=jsc\b/,
-    'the entry must pin engine=jsc rather than relying on the default');
+  assert.ok(!/argument=/.test(entry), 'entry must not pass a templated argument');
+  assert.ok(!/\{\{\{/.test(filterSource), 'no module templating should remain');
+});
+
+test('the filter script entry leaves engine unset', () => {
+  // The Shadowrocket manual: jsc suits small, simple, frequently-called scripts;
+  // webview suits complex, high-memory ones such as parsing MB-scale JSON. This
+  // filter parses JSON responses, so the default (webview for http-response) is
+  // the documented choice. Pinning jsc here would be the wrong one.
+  const entry = sectionOf(filterSource, '[Script]')
+    .split('\n').map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#'))[0];
+  assert.ok(!/engine=/.test(entry),
+    'engine should be left to the default; see the manual on engine selection');
 });
 
 test('the filter module routes all api traffic and keeps %APPEND%', () => {
