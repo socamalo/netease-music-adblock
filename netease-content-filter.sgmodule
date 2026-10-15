@@ -1,12 +1,12 @@
-#!name = 网易云音乐 · 内容过滤器 v1.0.2
-#!desc = [v1.0.2 · 可选增强] 按内容删除推广条目：解密后的正文里出现禁用字符串，就把包含它的条目整个删掉。不看接口、不看结构。独立模块 —— 出问题直接在模块列表里关掉/删掉，主模块不受影响。 / [OPTIONAL] Removes promo entries by content: if a banned string appears in the decrypted payload, the entry carrying it is dropped. Endpoint- and shape-agnostic. SHIPPED SEPARATELY so it can be disabled or deleted on its own without touching the main module.
+#!name = 网易云音乐 · 内容过滤器 v1.0.4
+#!desc = [v1.0.4 · 可选增强] 按内容删除推广条目：解密后的正文里出现禁用字符串，就把包含它的条目整个删掉。不看接口、不看结构。独立模块 —— 出问题直接在模块列表里关掉/删掉，主模块不受影响。 / [OPTIONAL] Removes promo entries by content: if a banned string appears in the decrypted payload, the entry carrying it is dropped. Endpoint- and shape-agnostic. SHIPPED SEPARATELY so it can be disabled or deleted on its own without touching the main module.
 #!author = socamalo
 #!homepage = https://github.com/socamalo/netease-music-adblock
 #!icon = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netease_Music.png
 #!url = https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-content-filter.sgmodule
 #!category = 去广告
 #!date = 2026-10-15
-#!version = 1.0.2
+#!version = 1.0.4
 #!arguments = 禁用字符串:云贝免费领取现金红包
 #!arguments-desc = 禁用字符串：用 | 分隔多个。默认「云贝免费领取现金红包」。\n\n只用完整字符串，不要用「云贝」这类短词 —— 太常见会把正常内容也删掉。
 
@@ -25,7 +25,7 @@
 # ------------------------------------------------------------------ #
 
 [Script]
-netease.content = type=http-response,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/[a-z]*api\/,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/js/content-filter.js,argument="{{{禁用字符串}}}",timeout=15
+netease.content = type=http-response,engine=jsc,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/[a-z]*api\/,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/js/content-filter.js,argument="{{{禁用字符串}}}",timeout=15
 
 
 [Body Rewrite]

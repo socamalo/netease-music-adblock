@@ -27,7 +27,7 @@
  * so its version is not comparable to the main module's. Bumped whenever this
  * file changes, and asserted to match the module's #!version by the test suite.
  */
-var FILTER_VERSION = '1.0.2';
+var FILTER_VERSION = '1.0.4';
 
 // ------------------------------------------------------------------ //
 // 临时存活探测 / TEMPORARY liveness probe
@@ -43,7 +43,45 @@ var FILTER_VERSION = '1.0.2';
 // per homepage open. Removed once the question is settled.
 // ------------------------------------------------------------------ //
 var LIVENESS_PROBE = true;
-var LIVENESS_PATH = '/link/page/rcmd/resource/show';
+
+// 底部导航接口。这个接口的返回里有一份导航标签列表，改一个字母屏幕上就看得见。
+//
+// 为什么用「改可见文字」而不是通知：前两种验证都栽在前提上 ——
+//   通知   → 依赖 iOS 通知权限，静默失败，看不到不代表没跑
+//   删标签 → 依赖 App 里本来有那个标签，用户机器上压根没有
+// 改导航文字不依赖任何前提：屏幕上必然有导航栏，有标记就是跑了。
+//
+// A visible marker in the bottom navigation, chosen because it depends on no
+// preconditions. The previous two probes both failed on assumptions: the
+// notification needs iOS permission (silently absent either way), and removing
+// a tab assumed the tab existed -- it did not on this device.
+var LIVENESS_PATH = '/link/home/framework/tab';
+var MARK = '✓';
+
+/** Append MARK to the first nav label found. Returns true if it marked one. */
+function markNav(node, depth) {
+  if (!node || typeof node !== 'object' || depth > 12) return false;
+  if (Array.isArray(node)) {
+    for (var i = 0; i < node.length; i++) {
+      if (markNav(node[i], depth + 1)) return true;
+    }
+    return false;
+  }
+  var list = node.commonResourceList;
+  if (Array.isArray(list) && list.length) {
+    var item = list[0];
+    if (item && typeof item.title === 'string' && item.title && item.title.indexOf(MARK) === -1) {
+      item.title = item.title + MARK;
+      return true;
+    }
+  }
+  for (var k in node) {
+    if (Object.prototype.hasOwnProperty.call(node, k)) {
+      if (markNav(node[k], depth + 1)) return true;
+    }
+  }
+  return false;
+}
 
 // 禁用字符串。模块的「禁用字符串」参数可以覆盖（用 | 分隔多个）。
 // Full-string matches only: 「云贝」 on its own is a feature name and appears in
@@ -171,18 +209,30 @@ function main() {
     var res = typeof $response !== 'undefined' ? $response : null;
     if (!res) { $done({}); return; }
 
-    // Liveness probe -- placed before every guard so it still fires even if the
-    // rest of the pipeline would bail. If this never shows, the script is not
-    // running at all and no amount of matching logic can help.
-    if (LIVENESS_PROBE && ((req && req.url) || '').indexOf(LIVENESS_PATH) !== -1) {
-      notify('★ 过滤器存活 v' + FILTER_VERSION, '脚本确实被执行了', '临时调试信息');
-    }
+    var probeUrl = (req && req.url) || '';
 
     // Bail out before touching anything on login / playback paths.
-    if (isProtected((req && req.url) || '')) { $done({}); return; }
+    if (isProtected(probeUrl)) { $done({}); return; }
 
     var ctx = readBody(res, req);
     if (!ctx) { $done({}); return; }
+
+    // ---- 可见存活标记 -------------------------------------------------
+    // 在导航栏标签上追加一个 ✓ 并写回。屏幕上必然有导航栏，所以看到它就
+    // 证明「这个模块的脚本被加载并执行了」—— 不依赖通知权限，也不依赖任何
+    // 界面上原本存在的东西。验证完删掉。
+    //
+    // Visible marker: append ✓ to a nav label and write the response back.
+    // Seeing it proves THIS module's script loaded and ran, relying on nothing
+    // that might not be there.
+    if (LIVENESS_PROBE && probeUrl.indexOf(LIVENESS_PATH) !== -1) {
+      var navObj = null;
+      try { navObj = JSON.parse(ctx.text); } catch (e) { navObj = null; }
+      if (navObj && markNav(navObj, 0)) {
+        var marked = writeBody(ctx, navObj);
+        if (marked) { $done(marked); return; }
+      }
+    }
 
     // 快速判断：正文里根本没有禁用串就直接放行，不做任何解析
     var hit = false;
@@ -224,7 +274,7 @@ if (typeof $response !== 'undefined' || typeof $request !== 'undefined') {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { prune: prune, isBannedText: isBannedText, BANNED: BANNED,
+  module.exports = { prune: prune, isBannedText: isBannedText, BANNED: BANNED, markNav: markNav,
                      reset: function () { removedCount = 0; },
                      getRemoved: function () { return removedCount; } };
 }

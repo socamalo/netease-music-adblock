@@ -199,6 +199,19 @@ test('the content filter ships as its own module, not inside the main one', () =
     'the filter module should load content-filter.js');
 });
 
+test('the filter script entry pins engine=jsc', () => {
+  // Documented behaviour: for http-request / http-response types, an unspecified
+  // or `auto` engine resolves to the WebView engine, not JSC. That is a
+  // different execution environment, and the reference module we were given
+  // (YouTubeAd) pins it explicitly. Leaving it unset is what this guards against.
+  const entry = sectionOf(filterSource, '[Script]')
+    .split('\n').map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#'))[0];
+  assert.ok(entry, 'no script entry found');
+  assert.match(entry, /engine=jsc\b/,
+    'the entry must pin engine=jsc rather than relying on the default');
+});
+
 test('the filter module routes all api traffic and keeps %APPEND%', () => {
   const section = filterSource.split('[Script]')[1].split('[MITM]')[0];
   const entries = section.split('\n').filter((l) => l.includes('content-filter.js'));

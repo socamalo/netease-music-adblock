@@ -119,6 +119,28 @@ test('multiple occurrences in one payload are all removed', () => {
   assert.deepStrictEqual(out.data.list.map((x) => x.title), ['ok']);
 });
 
+test('markNav appends a visible marker to one nav label, idempotently', () => {
+  // The visible liveness probe. Two earlier probes failed on preconditions --
+  // notifications need iOS permission, and removing a tab assumed the tab
+  // existed -- so this one edits something guaranteed to be on screen.
+  const o = { code: 200, data: { commonResourceList: [
+    { title: '首页' }, { title: '搜索' }, { title: '笔记' }] } };
+  assert.strictEqual(F.markNav(o, 0), true);
+  assert.deepStrictEqual(o.data.commonResourceList.map((x) => x.title),
+    ['首页✓', '搜索', '笔记']);
+
+  // Re-running must not stack markers.
+  F.markNav(o, 0);
+  assert.deepStrictEqual(o.data.commonResourceList.map((x) => x.title),
+    ['首页✓', '搜索', '笔记']);
+});
+
+test('markNav is a no-op on payloads with no nav list', () => {
+  assert.strictEqual(F.markNav({ data: { songs: [{ name: 'x' }] } }, 0), false);
+  assert.strictEqual(F.markNav({}, 0), false);
+  assert.strictEqual(F.markNav(null, 0), false);
+});
+
 test('removals are reported to the phone', () => {
   // The request log records routing decisions only -- it never shows whether a
   // script ran -- so a notification is the only way to tell "ran but the card
