@@ -749,6 +749,24 @@ function isProtected(url) {
   return false;
 }
 
+/**
+ * Reports on the phone when something is actually removed.
+ *
+ * This is not decoration. Shadowrocket's request log records routing decisions
+ * only -- it never shows whether a script ran -- so without this there is no way
+ * to tell "the filter ran and the card still shows" apart from "the filter never
+ * ran at all". Fires only on a real removal, so it stays quiet in normal use.
+ */
+function notify(title, subtitle, body) {
+  try {
+    if (typeof $notification !== 'undefined' && $notification.post) {
+      $notification.post(title, subtitle, body || '');
+    } else if (typeof $notify !== 'undefined') {
+      $notify(title, subtitle, body || '');
+    }
+  } catch (e) { /* never let reporting break the response */ }
+}
+
 var removedCount = 0;
 
 function isBannedText(s) {
@@ -848,10 +866,13 @@ function main() {
 
     if (removedCount === 0) { $done({}); return; }
 
+    var where = ((req && req.url) || '').split('?')[0];
     if (typeof console !== 'undefined' && console.log) {
-      console.log('[content-filter] removed ' + removedCount + ' item(s) from ' +
-                  ((req && req.url) || '').split('?')[0]);
+      console.log('[content-filter] removed ' + removedCount + ' item(s) from ' + where);
     }
+    notify('内容过滤器已生效',
+           '删除 ' + removedCount + ' 条',
+           where.split('/').slice(-3).join('/'));
 
     var payload = writeBody(ctx, obj);
     $done(payload || {});

@@ -118,3 +118,12 @@ test('multiple occurrences in one payload are all removed', () => {
   assert.strictEqual(removed, 2);
   assert.deepStrictEqual(out.data.list.map((x) => x.title), ['ok']);
 });
+
+test('removals are reported to the phone', () => {
+  // The request log records routing decisions only -- it never shows whether a
+  // script ran -- so a notification is the only way to tell "ran but the card
+  // survived" apart from "never ran". Without it, the two look identical.
+  const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'content-filter.js'), 'utf8');
+  assert.match(src, /\$notification/, 'must post a notification on removal');
+  assert.match(src, /内容过滤器已生效/, 'notification should be identifiable');
+});
