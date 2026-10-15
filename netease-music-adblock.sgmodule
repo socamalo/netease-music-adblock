@@ -1,5 +1,5 @@
-#!name = 网易云音乐去广告
-#!desc = 屏蔽网易云音乐 App 的开屏/弹窗/信息流/评论区/侧栏广告与推广位。仅去广告，不解锁 VIP 权益。 / Removes NetEase Cloud Music ads: splash, popups, feeds, comment-area injections and sidebar promos. Ad removal only - does not unlock VIP entitlements.
+#!name = 网易云音乐去广告 v1.0.4
+#!desc = [v1.0.4] 屏蔽网易云音乐 App 的开屏/弹窗/信息流/评论区/侧栏广告与推广位。双层：URL Rewrite（免 MITM）+ Script（需 MITM）。仅去广告，不解锁 VIP。 / [v1.0.4] Removes NetEase Cloud Music ads. Two layers: URL Rewrite (no MITM needed) + Script (needs MITM). Ad removal only.
 #!author = socamalo
 #!homepage = https://github.com/socamalo/netease-music-adblock
 #!icon = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netease_Music.png
@@ -7,7 +7,7 @@
 #!raw-url = https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-music-adblock.sgmodule
 #!category = 去广告
 #!date = 2026-10-15
-#!version = 1.0.3
+#!version = 1.0.4
 
 
 [Rule]
@@ -41,6 +41,31 @@ DOMAIN-SUFFIX, m.ads.8le8le.com, REJECT
 # HTTPDNS: blocking it stops ad domains being resolved around the rules.
 DOMAIN-SUFFIX, httpdns.n.netease.com, REJECT
 DOMAIN-SUFFIX, httpdns.music.163.com, REJECT
+
+
+[URL Rewrite]
+# ---------------------------------------------------------------- #
+# 第一层：纯 URL 层的广告拦截，**不需要 MITM、不需要证书、不需要脚本**。
+#
+# 为什么要有这一层：脚本要生效，必须 MITM 解密成功；而 URL Rewrite 只看 URL，
+# 证书没装好 / 解密没开也照样拦得住。实测日志里 REJECT-DICT 是确认生效的。
+# 所以把「一望即知的广告接口」放这一层，脚本只留给需要改 JSON 的复杂场景。
+#
+# Layer 1: ad blocking at the pure URL level -- no MITM, no certificate, no
+# script. Scripts only fire once MITM decryption works; URL rewrites match on
+# the URL alone and keep working even when the certificate is not trusted.
+# Splash/feed ad endpoints are one-liners, so they belong here.
+#
+# reject-dict returns {} -- the same payload the script would produce.
+# ---------------------------------------------------------------- #
+
+# 所有 /ad 系接口（开屏、嗅探、配置、素材、埋点）
+# Every /ad/* endpoint: splash, sniffing, config, material, telemetry.
+# 注意 [a-z]*api 同时覆盖 /api /eapi /xeapi /weapi —— 少一个前缀就整段失效。
+^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/[a-z]*api\/ad(?:\/|[?#]|$) - reject-dict
+
+# 其余纯推广位 / Other pure-promo endpoints
+^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/[a-z]*api\/(?:delivery\/|resource-exposure\/|vip\/cashier\/|vipmall\/|sp\/flow\/popup\/|content\/activity\/|mlivestream\/entrance\/|activity\/bonus\/) - reject-dict
 
 
 [Script]

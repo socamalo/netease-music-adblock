@@ -88,6 +88,71 @@ test('every ad URL from the real device log routes through the module', () => {
   assert.deepStrictEqual(missed, [], 'these real ad URLs would never reach the script');
 });
 
+/* ---------------------------------------------------- URL Rewrite layer --- */
+
+/**
+ * The URL Rewrite layer is the one that survives a broken/untrusted MITM
+ * certificate, so it must stand on its own. Real device logs showed
+ * reject-dict rules firing while no script ever executed, which is exactly why
+ * this layer exists.
+ */
+function urlRewritePatterns() {
+  const section = source.split('[URL Rewrite]')[1].split('[Script]')[0];
+  const out = [];
+  for (const line of section.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const m = trimmed.match(/^(\S+)\s+-\s+(\S+)/);
+    if (m) out.push({ pattern: m[1], action: m[2] });
+  }
+  return out;
+}
+
+const URL_RULES = urlRewritePatterns();
+
+test('the module defines a URL Rewrite layer', () => {
+  assert.ok(URL_RULES.length > 0, 'no [URL Rewrite] rules found');
+});
+
+test('URL Rewrite patterns are valid regexes using reject-dict', () => {
+  for (const { pattern, action } of URL_RULES) {
+    assert.doesNotThrow(() => new RegExp(pattern), `invalid regex: ${pattern}`);
+    assert.strictEqual(action, 'reject-dict', `unexpected action: ${action}`);
+  }
+});
+
+test('URL Rewrite covers every real device ad URL without needing MITM', () => {
+  const urls = require('./fixtures/device-ad-urls.json').urls;
+  const missed = urls.filter((u) => !URL_RULES.some((r) => new RegExp(r.pattern).test(u)));
+  assert.deepStrictEqual(missed, [],
+    'these would still show ads if the MITM certificate is not trusted');
+});
+
+test('URL Rewrite does not swallow playback or login traffic', () => {
+  for (const url of [
+    'https://interface3.music.163.com/xeapi/song/enhance/player/url/v1',
+    'https://interface3.music.163.com/eapi/login/cellphone',
+    'https://interface3.music.163.com/xeapi/song/lyric',
+  ]) {
+    assert.ok(!URL_RULES.some((r) => new RegExp(r.pattern).test(url)),
+      `URL Rewrite must not match core traffic: ${url}`);
+  }
+});
+
+test('URL Rewrite patterns contain no comma (would split the config line)', () => {
+  for (const { pattern } of URL_RULES) {
+    assert.ok(!/\{\d+,\d+\}/.test(pattern),
+      `comma-bearing quantifier will be split by the parser: ${pattern}`);
+  }
+});
+
+test('the version is visible in the module name so a stale copy is obvious', () => {
+  const name = source.split('\n').find((l) => l.startsWith('#!name'));
+  const version = source.split('\n').find((l) => l.startsWith('#!version'));
+  const v = version.split('=')[1].trim();
+  assert.ok(name.includes(v), `#!name should carry the version (${v}) so the installed build is identifiable`);
+});
+
 test('patterns cover the plaintext http:// scheme the app also uses', () => {
   // Observed on the device as http:// rather than https://, so ^https?: matters.
   assert.ok(covered('http://interface3.music.163.com/eapi/ad/loading/current'));

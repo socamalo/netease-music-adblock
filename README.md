@@ -4,7 +4,7 @@
 > A dedicated ad-blocking rewrite script for **NetEase Cloud Music**, for Shadowrocket / Surge / Loon / Quantumult X.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-58%20passing-brightgreen.svg)](#开发与测试--development)
+[![Tests](https://img.shields.io/badge/tests-64%20passing-brightgreen.svg)](#开发与测试--development)
 
 **中文** | [English](#english)
 
@@ -90,6 +90,28 @@ Shadowrocket → **配置** → **模块** → 右上角 **➕** → 粘贴上�
 
 ---
 
+## 两层结构（为什么这样设计）/ Two layers
+
+模块做了**两层**拦截，这是刻意设计：
+
+| 层 | 机制 | 需要 MITM？ | 负责什么 |
+|---|---|---|---|
+| **第一层** | `[URL Rewrite]` → `reject-dict` | ❌ 不需要 | 所有 `/ad/*` 接口、纯推广位 |
+| **第二层** | `[Script]` | ✅ 需要 | 需要改 JSON 的复杂场景（首页信息流、评论区、Banner） |
+
+**为什么要分两层**：脚本要生效，必须先 MITM 解密成功 —— 证书没装好、没信任、或 App 证书锁定，脚本就一次都跑不了。而 URL Rewrite 只看 URL，**证书没配好也照样拦得住**。
+
+实测数据支撑这个设计：在某次真机日志里，`reject-dict` 类规则命中 80 次，而**整份日志没有任何一次脚本执行记录**。如果广告拦截只押在脚本上，那台设备就是完全失效的。所以「一望即知的广告接口」放在第一层，脚本只留给真正需要解析 JSON 的场景。
+
+### 怎么确认装的是新版
+
+模块名里带版本号（`#!name = 网易云音乐去广告 v1.0.4`），**在 Shadowrocket 模块列表里直接能看到**。看不到版本号 = 装的是旧版，删掉重新添加。
+
+装好后启动 App，日志里应该出现：
+
+- `REWRITE <pattern> _ REJECT-DICT` 且 URL 含 `/xeapi/ad/` ← 第一层生效
+- 请求结果从 `[DIRECT]` 变成被规则命中 ← 关键判据
+
 ## 原理 / How it works
 
 网易云音乐的接口有三种形态，脚本对三种都做了处理：
@@ -136,7 +158,7 @@ Shadowrocket → **配置** → **模块** → 右上角 **➕** → 粘贴上�
 整个仓库**只有 JavaScript，没有 Python**。脚本本身零依赖，不带 CryptoJS，也不从 CDN 拉任何东西 —— 网易云音乐运行脚本的环境里只有 JS 引擎，AES 是脚本自己实现的。
 
 ```bash
-npm test             # 58 个测试
+npm test             # 64 个测试
 npm run test:watch   # 保存即跑
 ```
 
@@ -157,7 +179,7 @@ npm run test:watch   # 保存即跑
 | 纯 JS AES-128-ECB 与 **OpenSSL** 对拍 200 组随机密钥 | ✅ 200/200 一致 |
 | AES 通过 **NIST FIPS-197** 标准测试向量 | ✅ |
 | 能解密 **pycryptodome** 加密的网易云载荷 | ✅ 全部字节一致 |
-| 规则引擎、端到端流程（明文 / 密文 / gzip / QuanX） | ✅ 58 个测试全绿 |
+| 规则引擎、端到端流程（明文 / 密文 / gzip / QuanX） | ✅ 64 个测试全绿 |
 | 模块正则覆盖脚本所有路径 | ✅ 自动校验 |
 | **在真机 Shadowrocket 上的实际效果** | ⚠️ **未验证** |
 
@@ -279,7 +301,7 @@ It ships its own ~4 KB pure-JS AES-128-ECB instead of inlining CryptoJS (~120 KB
 **This repository contains JavaScript only — there is no Python anywhere.** The script itself has zero dependencies: it does not bundle CryptoJS and fetches nothing from a CDN, because the environment the rewrite runs in is a bare JS engine. AES is implemented in the script itself.
 
 ```bash
-npm test    # 58 tests, zero dependencies (Node's built-in runner)
+npm test    # 64 tests, zero dependencies (Node's built-in runner)
 ```
 
 Node is a local development tool and has nothing to do with what runs inside the app.
