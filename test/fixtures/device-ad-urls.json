@@ -1,0 +1,24 @@
+{
+  "note": "Every ad URL observed in a Shadowrocket request log while a Tmall 11.11 splash ad served. All returned DIRECT -- no rule matched -- because of the /xeapi/ prefix.",
+  "urls": [
+    "https://interface3.music.163.com/xeapi/ad/config/get",
+    "https://interface3.music.163.com/xeapi/ad/config",
+    "https://interface3.music.163.com/xeapi/ad/commonconfig",
+    "https://interface3.music.163.com/xeapi/ad/materialconfig",
+    "https://interface3.music.163.com/xeapi/ad/sniffing",
+    "https://interface3.music.163.com/xeapi/ad/get",
+    "https://interface3.music.163.com/xeapi/ad/loading/get",
+    "https://interface3.music.163.com/xeapi/ad/loading/bidget",
+    "https://interface3.music.163.com/xeapi/ad/prefetch/select",
+    "https://interface3.music.163.com/xeapi/ad/feedback",
+    "https://interface3.music.163.com/xeapi/ad/iyunIds",
+    "https://interface3.music.163.com/xeapi/ad/device/deviceid",
+    "https://interface3.music.163.com/xeapi/ad/monitor/click",
+    "https://interface3.music.163.com/xeapi/ad/monitor/impress",
+    "https://interface3.music.163.com/xeapi/ad/monitor/conversion",
+    "http://interface3.music.163.com/eapi/ad/iyunIds",
+    "http://interface3.music.163.com/eapi/ad/loading/current",
+    "http://interface3.music.163.com/eapi/ad/prefetch/select",
+    "https://interface3.music.163.com/eapi/ad/monitor/impress"
+  ]
+}

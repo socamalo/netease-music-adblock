@@ -84,14 +84,18 @@ test('extractPath handles every API prefix the app has used', () => {
   }
 });
 
-test('the real splash-ad requests from the device log are blanked', () => {
-  // Captured from Shadowrocket while a Tmall 双11 splash ad was showing.
-  for (const url of [
-    'https://interface3.music.163.com/xeapi/ad/sniffing',
-    'https://interface3.music.163.com/eapi/ad/sniffing',
-    'https://interface3.music.163.com/xeapi/ad',
-  ]) {
+/**
+ * The complete set of ad URLs the app actually called while a Tmall 双11 splash
+ * ad was serving, taken verbatim from a Shadowrocket request log. Every one of
+ * these came back as DIRECT -- no rule matched -- because of the /xeapi/ prefix.
+ * This is the regression fixture for that bug.
+ */
+const DEVICE_AD_URLS = require('./fixtures/device-ad-urls.json').urls;
+
+test('every ad URL from the real device log is now blanked', () => {
+  for (const url of DEVICE_AD_URLS) {
     const path = M.extractPath(url);
+    assert.ok(path, `extractPath failed on ${url}`);
     assert.deepStrictEqual(M.classify(path), { action: 'empty' }, url);
   }
 });

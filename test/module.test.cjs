@@ -80,6 +80,14 @@ test('patterns cover the /xeapi/ prefix a newer app build uses', () => {
   }
 });
 
+test('every ad URL from the real device log routes through the module', () => {
+  // Same fixture the script-side test uses: if the module does not match these,
+  // the script never runs and the rule is dead regardless of how correct it is.
+  const urls = require('./fixtures/device-ad-urls.json').urls;
+  const missed = urls.filter((u) => !covered(u));
+  assert.deepStrictEqual(missed, [], 'these real ad URLs would never reach the script');
+});
+
 test('patterns cover the plaintext http:// scheme the app also uses', () => {
   // Observed on the device as http:// rather than https://, so ^https?: matters.
   assert.ok(covered('http://interface3.music.163.com/eapi/ad/loading/current'));
