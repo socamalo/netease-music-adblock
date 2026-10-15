@@ -7,7 +7,7 @@
 #!raw-url = https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-music-adblock.sgmodule
 #!category = 去广告
 #!date = 2026-10-15
-#!version = 1.0.5
+#!version = 1.0.6
 
 
 [Rule]
