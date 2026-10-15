@@ -27,7 +27,23 @@
  * so its version is not comparable to the main module's. Bumped whenever this
  * file changes, and asserted to match the module's #!version by the test suite.
  */
-var FILTER_VERSION = '1.0.0';
+var FILTER_VERSION = '1.0.1';
+
+// ------------------------------------------------------------------ //
+// 临时存活探测 / TEMPORARY liveness probe
+//
+// 目的：在排查「过滤器到底有没有执行」时给一个无条件的信号 —— 不依赖任何
+// 匹配结果，只要脚本被执行到，就会弹一条通知。
+//
+// 只挂在首页信息流这一个接口上，所以打开一次首页弹一次，不会刷屏。
+// 问题确认后删掉。
+//
+// Unconditional: proves the script body executed, independent of whether
+// anything matched. Pinned to one homepage endpoint so it is one notification
+// per homepage open. Removed once the question is settled.
+// ------------------------------------------------------------------ //
+var LIVENESS_PROBE = true;
+var LIVENESS_PATH = '/link/page/rcmd/resource/show';
 
 // 禁用字符串。模块的「禁用字符串」参数可以覆盖（用 | 分隔多个）。
 // Full-string matches only: 「云贝」 on its own is a feature name and appears in
@@ -154,6 +170,13 @@ function main() {
     var req = typeof $request !== 'undefined' ? $request : null;
     var res = typeof $response !== 'undefined' ? $response : null;
     if (!res) { $done({}); return; }
+
+    // Liveness probe -- placed before every guard so it still fires even if the
+    // rest of the pipeline would bail. If this never shows, the script is not
+    // running at all and no amount of matching logic can help.
+    if (LIVENESS_PROBE && ((req && req.url) || '').indexOf(LIVENESS_PATH) !== -1) {
+      notify('★ 过滤器存活 v' + FILTER_VERSION, '脚本确实被执行了', '临时调试信息');
+    }
 
     // Bail out before touching anything on login / playback paths.
     if (isProtected((req && req.url) || '')) { $done({}); return; }
