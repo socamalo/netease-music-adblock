@@ -1,0 +1,29 @@
+{
+  "name": "netease-music-adblock",
+  "version": "1.0.0",
+  "description": "Ad-blocking rewrite script for NetEase Cloud Music on Shadowrocket / Surge / Loon / Quantumult X",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.cjs",
+    "test:watch": "node --test --watch test/*.test.cjs",
+    "fixtures": "uv run python tools/make_fixture.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/socamalo/netease-music-adblock.git"
+  },
+  "keywords": [
+    "shadowrocket",
+    "surge",
+    "loon",
+    "quantumult-x",
+    "adblock",
+    "netease",
+    "netease-cloud-music",
+    "sgmodule"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

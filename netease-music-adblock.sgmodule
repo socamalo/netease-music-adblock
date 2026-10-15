@@ -1,0 +1,59 @@
+#!name = 网易云音乐去广告
+#!desc = 屏蔽网易云音乐 App 的开屏/弹窗/信息流/评论区/侧栏广告与推广位。仅去广告，不解锁 VIP 权益。 / Removes NetEase Cloud Music ads: splash, popups, feeds, comment-area injections and sidebar promos. Ad removal only - does not unlock VIP entitlements.
+#!author = socamalo
+#!homepage = https://github.com/socamalo/netease-music-adblock
+#!icon = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netease_Music.png
+#!url = https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-music-adblock.sgmodule
+#!raw-url = https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-music-adblock.sgmodule
+#!category = 去广告
+#!date = 2026-10-15
+#!version = 1.0.0
+
+
+[Rule]
+# 广告素材 CDN：这些域名只用于投放广告图片/视频，直接 REJECT 最省事。
+# Ad-creative CDNs: only ever used to serve ad images/video, so reject outright.
+DOMAIN-SUFFIX, iadmusicmat.music.126.net, REJECT
+DOMAIN-SUFFIX, iadmat.nosdn.127.net, REJECT
+DOMAIN-SUFFIX, iadmatapk.nosdn.127.net, REJECT
+DOMAIN-SUFFIX, iad.g.163.com, REJECT
+
+# HTTPDNS：屏蔽后广告域名无法被解析绕过，同时不影响正常播放。
+# HTTPDNS: blocking it stops ad domains being resolved around the rules.
+DOMAIN-SUFFIX, httpdns.n.netease.com, REJECT
+DOMAIN-SUFFIX, httpdns.music.163.com, REJECT
+
+
+[Script]
+# ---------------------------------------------------------------- #
+# 所有接口都交给同一个脚本处理，脚本内部按路径决定「清空」还是「改写」。
+# 这样新增/失效接口只需要改脚本，不用改模块。
+#
+# Every endpoint routes to the same script; the script decides per-path whether
+# to blank the payload or surgically rewrite it. Adding or retiring an endpoint
+# is then a script change, not a module change.
+#
+# binary-body-mode=1 是关键：网易云的 eapi 响应是 AES 加密的二进制流，
+# 必须以字节而不是字符串交给脚本，否则密文会被 UTF-8 解码破坏。
+# binary-body-mode=1 matters: NetEase eapi responses are AES-encrypted binary
+# streams and must reach the script as bytes, not as a UTF-8-decoded string.
+# ---------------------------------------------------------------- #
+
+# 广告与推广 / Ads and promotions
+netease.ads = type=http-response,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/(?:e?api|weapi)\/(?:ad(?:\/|[?#]|$)|delivery\/|resource-exposure\/|content\/activity\/|vip\/cashier\/|vipmall\/|sp\/flow\/popup\/|mlivestream\/|activity\/),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/js/netease-adblock.js,timeout=15
+
+# 首页 / 发现页 / 底部导航 / 侧栏 / 账号中心
+# Home, discovery, bottom nav, sidebar, account centre
+netease.feeds = type=http-response,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/(?:e?api|weapi)\/(?:link\/|homepage\/|vipnewcenter\/|side-bar\/|yunbei\/|mine\/applet\/|creator\/|moment\/tab\/|user\/sub\/artist|resniche\/),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/js/netease-adblock.js,timeout=15
+
+# 搜索页推广 / Search-page promos
+netease.search = type=http-response,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/(?:e?api|weapi)\/search\/(?:chart|default|rcmd|specialkeyword|suggest),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/js/netease-adblock.js,timeout=15
+
+# 评论区插入推广 + /batch 聚合接口 / Comment-area injections + the /batch aggregate
+netease.comments = type=http-response,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/(?:e?api|weapi)\/(?:batch|v\d\/resource\/comment\/floor\/get|comment\/feed\/inserted|resource\/comments\/musiciansaid|music\/songshare\/|community\/friends\/|v\d\/content\/exposure\/|song\/play\/more\/list\/v\d|ios\/(?:version|upgrade\/get)),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/js/netease-adblock.js,timeout=15
+
+
+[MITM]
+# %APPEND% 一定要写：没有它，这个模块会把你配置文件里已有的 hostname 列表整个覆盖掉。
+# %APPEND% is required: without it the module overwrites your existing hostname list.
+hostname = %APPEND% music.163.com, *.music.163.com
