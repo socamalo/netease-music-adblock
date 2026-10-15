@@ -127,12 +127,16 @@ test('markNav appends a visible marker to one nav label, idempotently', () => {
     { title: '首页' }, { title: '搜索' }, { title: '笔记' }] } };
   assert.strictEqual(F.markNav(o, 0), true);
   assert.deepStrictEqual(o.data.commonResourceList.map((x) => x.title),
-    ['首页✓', '搜索', '笔记']);
+    ['首X', '搜索', '笔记']);
+
+  // Same length as the original -- a longer string risks a content-length or
+  // layout check rejecting it.
+  assert.strictEqual(o.data.commonResourceList[0].title.length, 2);
 
   // Re-running must not stack markers.
   F.markNav(o, 0);
   assert.deepStrictEqual(o.data.commonResourceList.map((x) => x.title),
-    ['首页✓', '搜索', '笔记']);
+    ['首X', '搜索', '笔记']);
 });
 
 test('markNav is a no-op on payloads with no nav list', () => {

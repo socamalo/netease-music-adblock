@@ -27,7 +27,7 @@
  * so its version is not comparable to the main module's. Bumped whenever this
  * file changes, and asserted to match the module's #!version by the test suite.
  */
-var FILTER_VERSION = '1.0.4';
+var FILTER_VERSION = '1.0.5';
 
 // ------------------------------------------------------------------ //
 // 临时存活探测 / TEMPORARY liveness probe
@@ -56,7 +56,7 @@ var LIVENESS_PROBE = true;
 // notification needs iOS permission (silently absent either way), and removing
 // a tab assumed the tab existed -- it did not on this device.
 var LIVENESS_PATH = '/link/home/framework/tab';
-var MARK = '✓';
+var MARK = 'X';
 
 /** Append MARK to the first nav label found. Returns true if it marked one. */
 function markNav(node, depth) {
@@ -70,8 +70,13 @@ function markNav(node, depth) {
   var list = node.commonResourceList;
   if (Array.isArray(list) && list.length) {
     var item = list[0];
-    if (item && typeof item.title === 'string' && item.title && item.title.indexOf(MARK) === -1) {
-      item.title = item.title + MARK;
+    // Same-length substitution on purpose. Appending would change the string
+    // length, which risks tripping a content-length check or a layout that
+    // reserves exactly the space for two characters. Swapping the last
+    // character keeps the byte count identical.
+    if (item && typeof item.title === 'string' && item.title.length > 1 &&
+        item.title.charAt(item.title.length - 1) !== MARK) {
+      item.title = item.title.slice(0, -1) + MARK;
       return true;
     }
   }
