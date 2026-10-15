@@ -15,7 +15,7 @@
  *     Blocking ads is the same thing a browser ad-blocker does; forging a VIP expiry
  *     is circumventing payment, and is out of scope.
  *
- * @version   1.0.0
+ * @version   1.0.1
  * @license   MIT
  */
 
@@ -352,6 +352,7 @@ var SCRIPT_PATHS = {
   '/link/page/rcmd/block/resource/multi/refresh': 1,
   '/link/position/show/resource': 1,
   '/homepage/block/page': 1,
+  '/v2/banner/get': 1,
   '/v2/resource/comment/floor/get': 1,
   '/v1/resource/comment/floor/get': 1,
   '/v2/resource/comment/floor/get/v2': 1,
@@ -385,6 +386,21 @@ function isKeptBlock(code) {
 
 function filterArrayBy(arr, keep) {
   return arr.filter(function (item) { return keep(item); });
+}
+
+/**
+ * Banner carousels mix genuine editorial content with sold ad slots. The sold
+ * ones are labelled, so filter by label rather than dropping the whole carousel
+ * -- that keeps new-album and event banners the user actually wants.
+ */
+var PROMO_BANNER_TITLES = ['活动', '广告'];
+
+function isPromoBanner(banner) {
+  return !!banner && PROMO_BANNER_TITLES.indexOf(banner.typeTitle) !== -1;
+}
+
+function filterBanners(list) {
+  return filterArrayBy(list, function (b) { return !isPromoBanner(b); });
 }
 
 /**
@@ -428,6 +444,9 @@ function handleBatch(body) {
     if (d.crossPlatformResource && d.crossPlatformResource.positionCode === 'MyPageBar') {
       d.crossPlatformResource = {};
     }
+  }
+  if (body['/api/v2/banner/get']) {
+    body['/api/v2/banner/get'] = applyScript('/v2/banner/get', body['/api/v2/banner/get']);
   }
   return body;
 }
@@ -560,12 +579,20 @@ function applyScript(path, body) {
         for (var j = 0; j < body.data.blocks.length; j++) {
           var blk = body.data.blocks[j];
           if (blk.showType === 'BANNER' && blk.extInfo && blk.extInfo.banners) {
-            blk.extInfo.banners = filterArrayBy(blk.extInfo.banners, function (bn) {
-              return bn.typeTitle !== '活动' && bn.typeTitle !== '广告';
-            });
+            blk.extInfo.banners = filterBanners(blk.extInfo.banners);
             break;
           }
         }
+      }
+      return body;
+
+    // Reached both directly and as a /batch sub-request. Its shape has not been
+    // captured live, so filter defensively: accept either a top-level or a
+    // data-nested `banners` array, and no-op if neither is present.
+    case '/v2/banner/get':
+      if (Array.isArray(body.banners)) body.banners = filterBanners(body.banners);
+      if (body.data && Array.isArray(body.data.banners)) {
+        body.data.banners = filterBanners(body.data.banners);
       }
       return body;
 

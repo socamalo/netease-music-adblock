@@ -166,6 +166,45 @@ test('homepage banner strip drops 活动 and 广告 only', () => {
   assert.deepStrictEqual(out.data.blocks[0].extInfo.banners.map((b) => b.typeTitle), ['新歌']);
 });
 
+test('/v2/banner/get filters labelled ad banners, top-level shape', () => {
+  const body = { code: 200, banners: [
+    { typeTitle: '广告', title: 'buy' },
+    { typeTitle: '活动', title: 'promo' },
+    { typeTitle: '新歌首发', title: 'real content' },
+  ] };
+  const out = M.applyScript('/v2/banner/get', body);
+  assert.deepStrictEqual(out.banners.map((b) => b.title), ['real content']);
+});
+
+test('/v2/banner/get filters labelled ad banners, data-nested shape', () => {
+  const body = { code: 200, data: { banners: [
+    { typeTitle: '广告' }, { typeTitle: '推荐' },
+  ] } };
+  const out = M.applyScript('/v2/banner/get', body);
+  assert.deepStrictEqual(out.data.banners.map((b) => b.typeTitle), ['推荐']);
+});
+
+test('/v2/banner/get is a no-op when the shape is unexpected', () => {
+  // We have no live capture of this endpoint, so an unrecognised shape must
+  // pass through rather than be mangled or throw.
+  for (const body of [{ code: 200 }, { code: 200, banners: null }, { code: 200, data: {} }]) {
+    assert.doesNotThrow(() => M.applyScript('/v2/banner/get', body));
+  }
+  const untouched = { code: 200, somethingElse: [{ typeTitle: '广告' }] };
+  M.applyScript('/v2/banner/get', untouched);
+  assert.deepStrictEqual(untouched.somethingElse, [{ typeTitle: '广告' }]);
+});
+
+test('batch also filters an embedded /api/v2/banner/get sub-response', () => {
+  const body = {
+    '/api/v2/banner/get': { code: 200, banners: [{ typeTitle: '广告' }, { typeTitle: '新歌' }] },
+    '/api/song/detail': { code: 200, data: { songs: [{ id: 7 }] } },
+  };
+  const out = M.handleBatch(body);
+  assert.deepStrictEqual(out['/api/v2/banner/get'].banners.map((b) => b.typeTitle), ['新歌']);
+  assert.deepStrictEqual(out['/api/song/detail'].data.songs, [{ id: 7 }]);
+});
+
 test('comment list strips VIP chrome and promoted comments', () => {
   const container = { comments: [
     { user: { followed: false, vipRights: { a: 1 } }, tag: { extDatas: [1] }, content: 'keep' },

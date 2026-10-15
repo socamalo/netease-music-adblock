@@ -4,7 +4,7 @@
 > A dedicated ad-blocking rewrite script for **NetEase Cloud Music**, for Shadowrocket / Surge / Loon / Quantumult X.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-44%20passing-brightgreen.svg)](#开发与测试--development)
+[![Tests](https://img.shields.io/badge/tests-48%20passing-brightgreen.svg)](#开发与测试--development)
 
 **中文** | [English](#english)
 
@@ -31,6 +31,7 @@ https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-mu
 |------|-----------|---------|
 | 开屏 / 启动 | 启动领 VIP 弹窗、免费听歌弹窗 | 接口返回清空 |
 | 首页 / 发现页 | 信息流广告位、Banner 广告、`PAGE_DISCOVERY_BANNER` | 按 `bizCode` 白名单过滤 |
+| Banner 轮播 | `v2/banner/get` 里标了「活动 / 广告」的位 | 按 `typeTitle` 过滤，保留真实内容 |
 | 搜索页 | Chart 推广、猜你喜欢、特殊词、默认填词 | 接口返回清空 |
 | 歌曲页 / 评论区 | 评论区插入的推广、楼层广告 | 子响应替换 / 字段清洗 |
 | 侧栏 / 账号中心 | 侧边 VIP 推广、浮层、优惠券、云贝入口、创作福利 | 接口返回清空 |
@@ -66,6 +67,25 @@ Shadowrocket → **配置** → **模块** → 右上角 **➕** → 粘贴上�
 ### 4. 杀掉 App 重开
 
 网易云音乐会缓存之前的连接 / TLS 状态，改完规则必须**完全杀掉**再打开。
+
+### 5. ⚠️ 开屏广告还在？先清缓存 —— 这几乎总是原因
+
+**开屏广告是提前预下载到本地的**，你还没打开 App 时，网易云就已经把广告图和配置下好、缓存进手机了。所以第一次装上模块后启动，App 根本不会发网络请求 —— 它直接从本地缓存读广告，Shadowrocket 从头到尾什么都看不到，自然也就拦不住。
+
+这不是规则没生效，是**存量广告**。实测确认：清掉缓存后开屏广告立即消失，且规则此后正常拦截。
+
+**怎么清**：
+
+- 能接受的话，**卸载重装**最彻底；
+- 不想重装：**先完全杀掉 App**（上滑关掉），再进「设置 → 清除缓存」。
+
+> App 内那个「清除缓存」按钮经常**不清广告素材缓存**，所以清了还在的话，直接重装。
+
+**判断方法**：清完缓存
+- 广告**消失** → 规则一直在正常工作，只是之前拦的是缓存。收工。
+- 广告**又回来** → 那是实时拉取，说明走的是还没覆盖的接口，请把 Shadowrocket 的请求日志发我。
+
+> 这条对**所有**去广告复写都成立，不只是本项目。任何广告只要被预缓存过，装模块当次都不会立刻见效。
 
 ---
 
@@ -110,7 +130,7 @@ Shadowrocket → **配置** → **模块** → 右上角 **➕** → 粘贴上�
 整个仓库**只有 JavaScript，没有 Python**。脚本本身零依赖，不带 CryptoJS，也不从 CDN 拉任何东西 —— 网易云音乐运行脚本的环境里只有 JS 引擎，AES 是脚本自己实现的。
 
 ```bash
-npm test             # 44 个测试
+npm test             # 48 个测试
 npm run test:watch   # 保存即跑
 ```
 
@@ -131,7 +151,7 @@ npm run test:watch   # 保存即跑
 | 纯 JS AES-128-ECB 与 **OpenSSL** 对拍 200 组随机密钥 | ✅ 200/200 一致 |
 | AES 通过 **NIST FIPS-197** 标准测试向量 | ✅ |
 | 能解密 **pycryptodome** 加密的网易云载荷 | ✅ 全部字节一致 |
-| 规则引擎、端到端流程（明文 / 密文 / gzip / QuanX） | ✅ 44 个测试全绿 |
+| 规则引擎、端到端流程（明文 / 密文 / gzip / QuanX） | ✅ 48 个测试全绿 |
 | 模块正则覆盖脚本所有路径 | ✅ 自动校验 |
 | **在真机 Shadowrocket 上的实际效果** | ⚠️ **未验证** |
 
@@ -143,7 +163,17 @@ npm run test:watch   # 保存即跑
 
 **Q：装完了广告还在？**
 
-按顺序排查：① 证书是否**已信任**（不只是已安装）② 全局路由是否在**配置**模式 ③ 网易云是否**杀掉重开** ④ 模块是否在列表**最上面** ⑤ 响应可能来自缓存，多刷几次。
+按顺序排查：
+
+1. **清缓存 / 重装 App** —— 见上面第 5 节。**开屏广告几乎都是这一条**，因为广告是提前预下载缓存到本地的，拦网络挡不住已经躺在手机里的素材。
+2. 证书是否**已信任**（不只是已安装）
+3. 全局路由是否在**配置**模式
+4. 网易云是否**杀掉重开**
+5. 模块是否在列表**最上面**
+
+**Q：为什么开屏广告非要清缓存才行？**
+
+因为开屏广告是 App 启动时从**本地缓存**读的，不是当场联网拉的。它在你上次使用时就已经下载好了 —— 你的模块拦的是"下载"这一步，但拦不住"读本地文件"。清掉缓存后，下载这一步被规则挡住，广告就再也回不来了。
 
 **Q：App 白屏 / 崩了？**
 
@@ -198,6 +228,26 @@ https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-mu
 
 Then: drag the module to the **top** of the list → enable **HTTPS decryption** and install + **trust** the CA certificate → set global routing to **Config** mode → **force-quit** NetEase Cloud Music and reopen it.
 
+### ⚠️ Splash ad still showing? Clear the cache — that is almost always why
+
+**The splash ad is pre-downloaded and cached on the device.** Before you ever open the app, NetEase has already fetched the ad image and its config and stored them locally. So the first launch after installing the module, the app makes **no network request at all** — it reads the cached ad straight off disk, and Shadowrocket never sees anything to block.
+
+This is not the rules failing. It is a stale cached ad. Confirmed by test: clearing the cache makes the splash ad disappear immediately, and the rules block it correctly from then on.
+
+**How to clear it:**
+
+- **Reinstalling the app** is the most reliable;
+- Otherwise: **force-quit the app first**, then use 设置 → 清除缓存 (Settings → Clear cache).
+
+> The in-app "clear cache" button often does **not** clear the ad-creative cache. If the ad survives it, reinstall.
+
+**How to tell which case you are in:**
+
+- Ad **gone** after clearing → the rules were working all along; you were looking at a cached ad.
+- Ad **comes back** → it is being fetched live, so an endpoint is still uncovered. Send me the Shadowrocket request log.
+
+> This applies to **every** ad-blocking rewrite, not just this one. Any ad that was pre-cached will survive the first launch after you install the module.
+
 ### Trusting the certificate (the step people skip)
 
 Generating and installing the CA profile is not enough — iOS treats *installing* and *trusting* as two separate actions. After installing the profile, go to **Settings → General → About → Certificate Trust Settings** and enable the switch for the certificate. The CA expires after ~365 days, and when it does, all HTTPS silently breaks.
@@ -205,6 +255,8 @@ Generating and installing the CA profile is not enough — iOS treats *installin
 ## What gets blocked
 
 Splash-screen VIP popups, home/discovery feed ad slots, banner ads, search-page promos, comment-area injections, sidebar upsells, coupon entries, update nags, and the ad-creative CDNs themselves (rejected at the rule layer).
+
+Sold slots inside the banner carousel (`v2/banner/get`) are filtered by their `活动`/`广告` label, so genuine editorial banners survive.
 
 **What it deliberately does not do:** unlock VIP or paid entitlements. Blocking ads is what a browser ad-blocker does. Forging a membership expiry to obtain paid content is circumventing payment, and is out of scope.
 
@@ -221,7 +273,7 @@ It ships its own ~4 KB pure-JS AES-128-ECB instead of inlining CryptoJS (~120 KB
 **This repository contains JavaScript only — there is no Python anywhere.** The script itself has zero dependencies: it does not bundle CryptoJS and fetches nothing from a CDN, because the environment the rewrite runs in is a bare JS engine. AES is implemented in the script itself.
 
 ```bash
-npm test    # 44 tests, zero dependencies (Node's built-in runner)
+npm test    # 48 tests, zero dependencies (Node's built-in runner)
 ```
 
 Node is a local development tool and has nothing to do with what runs inside the app.
@@ -240,7 +292,15 @@ The AES implementation is cross-checked against **OpenSSL** on 200 random keys a
 
 ## FAQ
 
-**Ads still showing?** Check, in order: certificate actually *trusted*; routing in *Config* mode; app force-quit and reopened; module at the *top* of the list; response possibly served from cache.
+**Ads still showing?** Check, in order:
+
+1. **Clear the cache / reinstall the app** — see the section above. This is the answer for the splash ad essentially every time, because the ad was pre-downloaded to disk and blocking the network cannot remove something already on the device.
+2. Certificate actually **trusted** (not merely installed)
+3. Global routing in **Config** mode
+4. App force-quit and reopened
+5. Module at the **top** of the list
+
+**Why does the splash ad need a cache clear?** Because the app reads it from local storage at launch rather than fetching it live. It was downloaded during a previous session — the module blocks the *download*, but cannot block *reading a local file*. Once the cache is cleared, the download is blocked and the ad does not come back.
 
 **App blank or crashing?** Toggle the module off immediately and open an Issue with the request log from Shadowrocket.
 

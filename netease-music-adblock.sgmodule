@@ -7,7 +7,7 @@
 #!raw-url = https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-music-adblock.sgmodule
 #!category = 去广告
 #!date = 2026-10-15
-#!version = 1.0.0
+#!version = 1.0.1
 
 
 [Rule]
@@ -44,7 +44,7 @@ netease.ads = type=http-response,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\.co
 
 # 首页 / 发现页 / 底部导航 / 侧栏 / 账号中心
 # Home, discovery, bottom nav, sidebar, account centre
-netease.feeds = type=http-response,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/(?:e?api|weapi)\/(?:link\/|homepage\/|vipnewcenter\/|side-bar\/|yunbei\/|mine\/applet\/|creator\/|moment\/tab\/|user\/sub\/artist|resniche\/),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/js/netease-adblock.js,timeout=15
+netease.feeds = type=http-response,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/(?:e?api|weapi)\/(?:link\/|homepage\/|v2\/banner\/get|vipnewcenter\/|side-bar\/|yunbei\/|mine\/applet\/|creator\/|moment\/tab\/|user\/sub\/artist|resniche\/),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/js/netease-adblock.js,timeout=15
 
 # 搜索页推广 / Search-page promos
 netease.search = type=http-response,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/(?:e?api|weapi)\/search\/(?:chart|default|rcmd|specialkeyword|suggest),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/js/netease-adblock.js,timeout=15
