@@ -15,7 +15,7 @@
  *     Blocking ads is the same thing a browser ad-blocker does; forging a VIP expiry
  *     is circumventing payment, and is out of scope.
  *
- * @version   1.0.4
+ * @version   1.0.5
  * @license   MIT
  */
 
@@ -340,7 +340,15 @@ var PREFIX_EMPTY = [
   '/ad/',
   '/resource-exposure/',
   '/v1/content/exposure/',
-  '/mlivestream/entrance/'
+  '/mlivestream/entrance/',
+
+  // 云贝 (Yunbei) promo family. The homepage card is assembled from several
+  // endpoints -- one supplies the card's content, another its shell/title.
+  // Blanking only the content leaves an empty white container on screen, so the
+  // whole family is blanked and the card is never created at all.
+  '/yunbei/',
+  '/new/yunbei/',
+  '/yunbei-center/'
 ];
 
 // Paths that need real surgery on the JSON rather than a blanket empty answer.
