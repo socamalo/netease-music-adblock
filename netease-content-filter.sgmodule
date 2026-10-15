@@ -1,12 +1,12 @@
-#!name = 网易云音乐 · 内容过滤器 v1.0.1
-#!desc = [v1.0.0 · 可选增强] 按内容删除推广条目：解密后的正文里出现禁用字符串，就把包含它的条目整个删掉。不看接口、不看结构。独立模块 —— 出问题直接在模块列表里关掉/删掉，主模块不受影响。 / [OPTIONAL] Removes promo entries by content: if a banned string appears in the decrypted payload, the entry carrying it is dropped. Endpoint- and shape-agnostic. SHIPPED SEPARATELY so it can be disabled or deleted on its own without touching the main module.
+#!name = 网易云音乐 · 内容过滤器 v1.0.2
+#!desc = [v1.0.2 · 可选增强] 按内容删除推广条目：解密后的正文里出现禁用字符串，就把包含它的条目整个删掉。不看接口、不看结构。独立模块 —— 出问题直接在模块列表里关掉/删掉，主模块不受影响。 / [OPTIONAL] Removes promo entries by content: if a banned string appears in the decrypted payload, the entry carrying it is dropped. Endpoint- and shape-agnostic. SHIPPED SEPARATELY so it can be disabled or deleted on its own without touching the main module.
 #!author = socamalo
 #!homepage = https://github.com/socamalo/netease-music-adblock
 #!icon = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netease_Music.png
 #!url = https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-content-filter.sgmodule
 #!category = 去广告
 #!date = 2026-10-15
-#!version = 1.0.1
+#!version = 1.0.2
 #!arguments = 禁用字符串:云贝免费领取现金红包
 #!arguments-desc = 禁用字符串：用 | 分隔多个。默认「云贝免费领取现金红包」。\n\n只用完整字符串，不要用「云贝」这类短词 —— 太常见会把正常内容也删掉。
 
@@ -26,6 +26,27 @@
 
 [Script]
 netease.content = type=http-response,pattern=^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/[a-z]*api\/,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/js/content-filter.js,argument="{{{禁用字符串}}}",timeout=15
+
+
+[Body Rewrite]
+# ------------------------------------------------------------------ #
+# 第二条路：声明式内容过滤，**不用 JavaScript**。
+#
+# 为什么加这个：上面的 [Script] 依赖脚本引擎执行（我们一直没能确认它到底跑没跑）。
+# [Body Rewrite] 是客户端的**内置功能**，和 URL Rewrite 一样是声明式的，不经过
+# 脚本引擎 —— 所以脚本不执行时，这一条仍有可能生效。
+#
+# 两者**同时保留**：谁生效都行。jq 先把卡片删掉后，脚本那边就搜不到禁用串，
+# 自动变成空操作，不会互相干扰。
+#
+# A declarative second path, using the client's built-in jq body rewriting instead
+# of the script engine. Kept alongside the script: whichever mechanism works will
+# do the job, and once jq has removed the entry the script simply finds nothing.
+#
+# 逻辑与脚本一致（自底向上）：walk 先处理子节点，所以删掉的是那张卡片本身，
+# 而不是包含它的整个块。
+# ------------------------------------------------------------------ #
+^https?:\/\/(?:[\w-]+\.)?music\.163\.com\/[a-z]*api\/ http-response-jq walk(if type=="array" then map(select((tostring|contains("云贝免费领取现金红包"))|not)) else . end)
 
 
 [MITM]

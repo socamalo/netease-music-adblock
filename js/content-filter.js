@@ -734,7 +734,7 @@ function applyScript(path, body) {
  * so its version is not comparable to the main module's. Bumped whenever this
  * file changes, and asserted to match the module's #!version by the test suite.
  */
-var FILTER_VERSION = '1.0.1';
+var FILTER_VERSION = '1.0.2';
 
 // ------------------------------------------------------------------ //
 // 临时存活探测 / TEMPORARY liveness probe

@@ -224,6 +224,63 @@ test('the filter module version matches FILTER_VERSION in the script', () => {
   assert.ok(name.includes(decl[1]), 'the version should be visible in the module name');
 });
 
+/**
+ * Extract a section by its header line.
+ *
+ * Splitting on the header string is not safe here: the module's own comments
+ * mention section names like `[Body Rewrite]` in prose, so a naive split cuts at
+ * the comment instead of the header. Walk lines until the next header instead.
+ */
+function sectionOf(src, name) {
+  const lines = src.split('\n');
+  const start = lines.findIndex((l) => l.trim() === name);
+  if (start < 0) return '';
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((l) => /^\[[^\]]+\]\s*$/.test(l.trim()));
+  return (end < 0 ? rest : rest.slice(0, end)).join('\n');
+}
+
+test('the [Body Rewrite] jq program genuinely filters, run against real jq', () => {
+  // This is the declarative path: it does not go through the script engine, so
+  // it can still work when scripts do not run. Verified by executing the exact
+  // program lifted from the module through the real jq binary -- not by reading
+  // it and assuming.
+  const section = sectionOf(filterSource, '[Body Rewrite]');
+  const line = section.split('\n').map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#'))[0];
+  assert.ok(line, 'no [Body Rewrite] rule found');
+
+  const m = line.match(/^(\S+)\s+(http-response-jq)\s+(.+)$/);
+  assert.ok(m, `expected "<regex> http-response-jq <jq>", got: ${line.slice(0, 80)}`);
+  const re = m[1];
+  const jq = m[3];
+
+  assert.ok(new RegExp(re).test('https://interface3.music.163.com/xeapi/link/page/rcmd/resource/show'),
+    'the rewrite should match the homepage feed');
+  assert.ok(new RegExp(re).test('https://interface3.music.163.com/eapi/ad/get'));
+
+  const { execFileSync } = require('node:child_process');
+  const run = (obj) => JSON.parse(
+    execFileSync('jq', ['-c', jq], { input: JSON.stringify(obj) }).toString());
+
+  const payload = { code: 200, data: { blocks: [{ bizCode: 'KEEP', list: [
+    { title: '每日推荐' },
+    { title: '云贝免费领取现金红包', actionUrl: 'orpheus://promo' },
+    { title: '我喜欢的音乐' },
+  ] }] } };
+
+  const out = run(payload);
+  assert.strictEqual(out.data.blocks.length, 1, 'parent block must survive');
+  assert.deepStrictEqual(out.data.blocks[0].list.map((x) => x.title),
+    ['每日推荐', '我喜欢的音乐']);
+
+  // Negative cases: must not over-remove.
+  const clean = { code: 200, data: { songs: [{ name: '普通歌' }, { name: '另一首' }] } };
+  assert.deepStrictEqual(run(clean), clean, 'unrelated payload must be untouched');
+  const shortWord = { data: { list: [{ title: '云贝商城' }] } };
+  assert.deepStrictEqual(run(shortWord), shortWord, 'the short word must not match');
+});
+
 test('the filter script guards login and playback paths', () => {
   // Routing every api call is intentional but puts login and playback inside the
   // blast radius, so the script itself must refuse to touch them.
