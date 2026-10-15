@@ -107,19 +107,20 @@ Shadowrocket → **配置** → **模块** → 右上角 **➕** → 粘贴上�
 
 ## 开发与测试 / Development
 
-纯 JS 脚本无运行时依赖；Python 只用于生成跨实现测试夹具。
+整个仓库**只有 JavaScript，没有 Python**。脚本本身零依赖，不带 CryptoJS，也不从 CDN 拉任何东西 —— 网易云音乐运行脚本的环境里只有 JS 引擎，AES 是脚本自己实现的。
 
 ```bash
-npm test                                  # 44 个测试
-npm run test:watch                        # 保存即跑
-uv run python tools/make_fixture.py       # 重新生成加密夹具
+npm test             # 44 个测试
+npm run test:watch   # 保存即跑
 ```
 
-测试用 Node 内置 test runner，**零依赖**：
+测试用 Node 内置 test runner，**零依赖**（Node 只是本地开发工具，和 App 里跑什么无关）：
 
 - `test/aes.test.cjs` — AES 实现正确性
 - `test/rules.test.cjs` — 规则引擎 + 端到端
 - `test/module.test.cjs` — 模块与脚本的一致性
+
+`test/fixtures/eapi-samples.json` 里是预先算好的加密样本（含密文与对应明文），用来证明这个手写的 JS AES 能正确解开网易云的载荷。它只是数据文件，测试时不需要任何 Python。
 
 ### 验证状态 / Verification status
 
@@ -217,13 +218,19 @@ It ships its own ~4 KB pure-JS AES-128-ECB instead of inlining CryptoJS (~120 KB
 
 ## Development
 
+**This repository contains JavaScript only — there is no Python anywhere.** The script itself has zero dependencies: it does not bundle CryptoJS and fetches nothing from a CDN, because the environment the rewrite runs in is a bare JS engine. AES is implemented in the script itself.
+
 ```bash
 npm test    # 44 tests, zero dependencies (Node's built-in runner)
 ```
 
+Node is a local development tool and has nothing to do with what runs inside the app.
+
 - `test/aes.test.cjs` — cipher correctness
 - `test/rules.test.cjs` — rule engine and end-to-end pipeline
 - `test/module.test.cjs` — keeps the module file and the script in sync
+
+`test/fixtures/eapi-samples.json` holds pre-computed ciphertext/plaintext pairs, used to prove the hand-written JS AES decrypts NetEase payloads correctly. It is a data file; running the tests requires no Python.
 
 ### Verification status
 

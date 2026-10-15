@@ -5,8 +5,7 @@
   "private": true,
   "scripts": {
     "test": "node --test test/*.test.cjs",
-    "test:watch": "node --test --watch test/*.test.cjs",
-    "fixtures": "uv run python tools/make_fixture.py"
+    "test:watch": "node --test --watch test/*.test.cjs"
   },
   "repository": {
     "type": "git",

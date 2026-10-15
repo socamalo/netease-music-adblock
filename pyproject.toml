@@ -1,9 +1,0 @@
-[project]
-name = "netease-music-adblock"
-version = "1.0.0"
-description = "Ad-blocking rewrite script for NetEase Cloud Music (Shadowrocket / Surge / Loon / Quantumult X). Python is used only by the dev tools, to cross-check the JS crypto against an independent implementation."
-readme = "README.md"
-requires-python = ">=3.10"
-dependencies = [
-    "pycryptodome>=3.20",
-]
