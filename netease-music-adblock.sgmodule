@@ -7,16 +7,35 @@
 #!raw-url = https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-music-adblock.sgmodule
 #!category = 去广告
 #!date = 2026-10-15
-#!version = 1.0.1
+#!version = 1.0.2
 
 
 [Rule]
 # 广告素材 CDN：这些域名只用于投放广告图片/视频，直接 REJECT 最省事。
 # Ad-creative CDNs: only ever used to serve ad images/video, so reject outright.
+#
+# 注意 iadmusicmatvideo 必须单独列：它是「开屏动图/视频素材」，域名不以
+# iadmusicmat.music.126.net 结尾，上一条 suffix 规则**盖不住它**。
+# 开屏视频广告动辄几百 MB，就是从这里下的。
+# iadmusicmatvideo must be listed separately: it hosts the splash-screen
+# animated/video creative. It does NOT end with iadmusicmat.music.126.net, so
+# the rule above does not cover it -- and splash video ads are hundreds of MB.
 DOMAIN-SUFFIX, iadmusicmat.music.126.net, REJECT
+DOMAIN-SUFFIX, iadmusicmatvideo.music.126.net, REJECT
+DOMAIN-SUFFIX, admusicpic.music.126.net, REJECT
 DOMAIN-SUFFIX, iadmat.nosdn.127.net, REJECT
 DOMAIN-SUFFIX, iadmatapk.nosdn.127.net, REJECT
 DOMAIN-SUFFIX, iad.g.163.com, REJECT
+
+# 兜底：网易云广告素材主机一律以 iadmusicmat 开头，将来换域名也能盖住。
+# Catch-all: NetEase ad-creative hosts are prefixed iadmusicmat, so a future
+# subdomain is covered without waiting for a module update.
+DOMAIN-KEYWORD, iadmusicmat, REJECT
+
+# 第三方广告联盟：网易云部分开屏广告由外部广告 SDK 投放（如天猫双11 这类品牌单）。
+# Third-party ad network: some splash ads are sold through an external SDK
+# rather than NetEase's own inventory (brand campaigns such as Tmall 双11).
+DOMAIN-SUFFIX, m.ads.8le8le.com, REJECT
 
 # HTTPDNS：屏蔽后广告域名无法被解析绕过，同时不影响正常播放。
 # HTTPDNS: blocking it stops ad domains being resolved around the rules.

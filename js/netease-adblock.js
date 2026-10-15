@@ -15,7 +15,7 @@
  *     Blocking ads is the same thing a browser ad-blocker does; forging a VIP expiry
  *     is circumventing payment, and is out of scope.
  *
- * @version   1.0.1
+ * @version   1.0.2
  * @license   MIT
  */
 
@@ -489,6 +489,18 @@ function extractPath(url) {
   return '/' + m[1];
 }
 
+/**
+ * A bare `{}` leaves any field the client indexes into as undefined. Where the
+ * real response shape has actually been captured, answer with a faithful empty
+ * instead, so the client never dereferences undefined and silently falls back.
+ *
+ * Live capture of /ad/loading/get returns { ads: [], code: 200, ext: {...} }.
+ */
+function emptyPayload(path) {
+  if (path.indexOf('/ad') === 0) return { code: 200, ads: [] };
+  return {};
+}
+
 function classify(path) {
   if (!path) return null;
   if (EXACT_EMPTY[path]) return { action: 'empty' };
@@ -776,7 +788,7 @@ function run() {
   // Reply through writeBody even for the blanket rules: if the response arrived
   // encrypted, the replacement has to be encrypted the same way.
   if (rule.action === 'empty') {
-    finish(client, writeBody(ctx, {}));
+    finish(client, writeBody(ctx, emptyPayload(path)));
     return;
   }
 
@@ -796,6 +808,7 @@ if (typeof module !== 'undefined' && module.exports) {
     AES: AES,
     extractPath: extractPath,
     classify: classify,
+    emptyPayload: emptyPayload,
     applyScript: applyScript,
     handleBatch: handleBatch,
     handleCommentList: handleCommentList,

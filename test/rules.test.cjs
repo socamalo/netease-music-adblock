@@ -222,12 +222,27 @@ test('comment list strips VIP chrome and promoted comments', () => {
 
 const URL_BASE = 'https://interface3.music.163.com/eapi';
 
-test('e2e: plain JSON ad response is replaced with {}', () => {
+test('e2e: plain JSON ad response is emptied', () => {
   const out = runScript({
     url: `${URL_BASE}/ad/loading/get`,
     body: JSON.stringify({ code: 200, ads: [{ id: 1 }] }),
   });
-  assert.strictEqual(out.body, '{}');
+  assert.deepStrictEqual(JSON.parse(out.body), { code: 200, ads: [] });
+});
+
+test('every ad/* endpoint is blanked, including ones not explicitly listed', () => {
+  // /ad/config/get is real, was not in the explicit list, and is only caught by
+  // the /ad/ prefix rule -- pin that so a refactor cannot silently drop it.
+  for (const p of ['/ad/config/get', '/ad/loading/get', '/ad/get', '/ad/loading/current']) {
+    assert.deepStrictEqual(M.classify(p), { action: 'empty' }, p);
+  }
+});
+
+test('emptyPayload is shape-faithful only where the shape was captured', () => {
+  assert.deepStrictEqual(M.emptyPayload('/ad/loading/get'), { code: 200, ads: [] });
+  assert.deepStrictEqual(M.emptyPayload('/ad/get'), { code: 200, ads: [] });
+  assert.deepStrictEqual(M.emptyPayload('/delivery/deliver'), {});
+  assert.deepStrictEqual(M.emptyPayload('/yunbei/account/entrance/get'), {});
 });
 
 test('e2e: encrypted ad response is replaced with ciphertext of {}', () => {
@@ -235,7 +250,7 @@ test('e2e: encrypted ad response is replaced with ciphertext of {}', () => {
   const out = runScript({ url: `${URL_BASE}/ad/loading/get`, body: cipher });
 
   assert.ok(out.body instanceof Uint8Array, 'must reply with bytes, not a string');
-  assert.deepStrictEqual(decryptToJson(out.body), {});
+  assert.deepStrictEqual(decryptToJson(out.body), { code: 200, ads: [] });
 });
 
 test('e2e: encrypted rcmd response keeps allow-listed blocks through a full round trip', () => {
@@ -314,7 +329,8 @@ test('e2e: binary-body-mode delivers plain JSON as UTF-8 bytes', () => {
   const out = runScript({ url: `${URL_BASE}/ad/loading/get`, body: bytes });
 
   assert.ok(out.body instanceof Uint8Array);
-  assert.strictEqual(Buffer.from(out.body).toString('utf8'), '{}');
+  assert.deepStrictEqual(
+    JSON.parse(Buffer.from(out.body).toString('utf8')), { code: 200, ads: [] });
 });
 
 test('e2e: Quantumult X receives bodyBytes', () => {
@@ -326,7 +342,9 @@ test('e2e: Quantumult X receives bodyBytes', () => {
   });
 
   assert.ok(out.bodyBytes instanceof ArrayBuffer, 'QuanX wants bodyBytes');
-  assert.deepStrictEqual(JSON.parse(Buffer.from(AES.decrypt(new Uint8Array(out.bodyBytes))).toString('utf8')), {});
+  assert.deepStrictEqual(
+    JSON.parse(Buffer.from(AES.decrypt(new Uint8Array(out.bodyBytes))).toString('utf8')),
+    { code: 200, ads: [] });
 });
 
 test('e2e: unicode content survives the encrypted round trip', () => {

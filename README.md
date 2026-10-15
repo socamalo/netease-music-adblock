@@ -4,7 +4,7 @@
 > A dedicated ad-blocking rewrite script for **NetEase Cloud Music**, for Shadowrocket / Surge / Loon / Quantumult X.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-48%20passing-brightgreen.svg)](#开发与测试--development)
+[![Tests](https://img.shields.io/badge/tests-52%20passing-brightgreen.svg)](#开发与测试--development)
 
 **中文** | [English](#english)
 
@@ -37,7 +37,8 @@ https://raw.githubusercontent.com/socamalo/netease-music-adblock/main/netease-mu
 | 侧栏 / 账号中心 | 侧边 VIP 推广、浮层、优惠券、云贝入口、创作福利 | 接口返回清空 |
 | 底部导航 | 可选的「漫游 / 笔记」标签 | 列表过滤 |
 | 更新提示 | 版本升级弹窗 | 接口返回清空 |
-| 广告素材 CDN | `iadmusicmat.music.126.net` 等 | 规则层直接 REJECT |
+| 开屏视频/动图广告 | `iadmusicmatvideo.music.126.net` | 规则层直接 REJECT |
+| 广告素材 CDN | `iadmusicmat*`、`admusicpic`、`iadmat*`、第三方广告联盟 | 规则层直接 REJECT |
 
 **它不做什么**：**不解锁 VIP / 会员权益**。去广告和浏览器装 AdBlock 是一回事；伪造会员到期时间去白嫖付费内容不是，本项目不做这件事。
 
@@ -130,7 +131,7 @@ Shadowrocket → **配置** → **模块** → 右上角 **➕** → 粘贴上�
 整个仓库**只有 JavaScript，没有 Python**。脚本本身零依赖，不带 CryptoJS，也不从 CDN 拉任何东西 —— 网易云音乐运行脚本的环境里只有 JS 引擎，AES 是脚本自己实现的。
 
 ```bash
-npm test             # 48 个测试
+npm test             # 52 个测试
 npm run test:watch   # 保存即跑
 ```
 
@@ -151,7 +152,7 @@ npm run test:watch   # 保存即跑
 | 纯 JS AES-128-ECB 与 **OpenSSL** 对拍 200 组随机密钥 | ✅ 200/200 一致 |
 | AES 通过 **NIST FIPS-197** 标准测试向量 | ✅ |
 | 能解密 **pycryptodome** 加密的网易云载荷 | ✅ 全部字节一致 |
-| 规则引擎、端到端流程（明文 / 密文 / gzip / QuanX） | ✅ 48 个测试全绿 |
+| 规则引擎、端到端流程（明文 / 密文 / gzip / QuanX） | ✅ 52 个测试全绿 |
 | 模块正则覆盖脚本所有路径 | ✅ 自动校验 |
 | **在真机 Shadowrocket 上的实际效果** | ⚠️ **未验证** |
 
@@ -254,7 +255,7 @@ Generating and installing the CA profile is not enough — iOS treats *installin
 
 ## What gets blocked
 
-Splash-screen VIP popups, home/discovery feed ad slots, banner ads, search-page promos, comment-area injections, sidebar upsells, coupon entries, update nags, and the ad-creative CDNs themselves (rejected at the rule layer).
+Splash-screen video/image ads (including third-party brand campaigns such as Tmall 双11), splash VIP popups, home/discovery feed ad slots, banner ads, search-page promos, comment-area injections, sidebar upsells, coupon entries, update nags, and the ad-creative CDNs themselves (rejected at the rule layer).
 
 Sold slots inside the banner carousel (`v2/banner/get`) are filtered by their `活动`/`广告` label, so genuine editorial banners survive.
 
@@ -273,7 +274,7 @@ It ships its own ~4 KB pure-JS AES-128-ECB instead of inlining CryptoJS (~120 KB
 **This repository contains JavaScript only — there is no Python anywhere.** The script itself has zero dependencies: it does not bundle CryptoJS and fetches nothing from a CDN, because the environment the rewrite runs in is a bare JS engine. AES is implemented in the script itself.
 
 ```bash
-npm test    # 48 tests, zero dependencies (Node's built-in runner)
+npm test    # 52 tests, zero dependencies (Node's built-in runner)
 ```
 
 Node is a local development tool and has nothing to do with what runs inside the app.

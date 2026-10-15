@@ -145,3 +145,22 @@ test('the [Rule] section rejects the ad-creative CDNs', () => {
     assert.ok(rules.includes(domain), `missing ad-domain rule: ${domain}`);
   }
 });
+
+/**
+ * Regression guard. These two were missing and were why a Tmall 双11 splash
+ * ad survived: `iadmusicmatvideo` holds splash animated/video creative, and its
+ * hostname does NOT end with `iadmusicmat.music.126.net`, so the neighbouring
+ * suffix rule never covered it. `admusicpic` holds ad stills.
+ */
+test('the splash video/image CDNs are rejected explicitly', () => {
+  const rules = source.split('[Rule]')[1].split('[Script]')[0];
+  for (const domain of ['iadmusicmatvideo.music.126.net', 'admusicpic.music.126.net']) {
+    assert.ok(rules.includes(domain), `missing ad-creative rule: ${domain}`);
+  }
+});
+
+test('an iadmusicmat keyword catch-all covers future ad-host renames', () => {
+  const rules = source.split('[Rule]')[1].split('[Script]')[0];
+  assert.ok(/DOMAIN-KEYWORD,\s*iadmusicmat,\s*REJECT/.test(rules),
+    'expected a DOMAIN-KEYWORD catch-all for iadmusicmat');
+});
