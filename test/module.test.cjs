@@ -209,6 +209,21 @@ test('the filter module routes all api traffic and keeps %APPEND%', () => {
   assert.ok(mitm.includes('%APPEND%'), 'must not clobber the hostname list');
 });
 
+test('the filter module version matches FILTER_VERSION in the script', () => {
+  // Two files carry the same number; nothing else keeps them in step, and a
+  // stale mismatch is exactly what makes "is my build current?" unanswerable.
+  const decl = filterSource.match(/#!version\s*=\s*([\d.]+)/);
+  assert.ok(decl, 'filter module needs a #!version');
+  const src = fs.readFileSync(path.join(ROOT, 'js', 'content-filter.js'), 'utf8');
+  const inJs = src.match(/FILTER_VERSION\s*=\s*'([\d.]+)'/);
+  assert.ok(inJs, 'content-filter.js must declare FILTER_VERSION');
+  assert.strictEqual(inJs[1], decl[1],
+    `module says ${decl[1]} but script says ${inJs[1]}`);
+
+  const name = filterSource.split('\n').find((l) => l.startsWith('#!name'));
+  assert.ok(name.includes(decl[1]), 'the version should be visible in the module name');
+});
+
 test('the filter script guards login and playback paths', () => {
   // Routing every api call is intentional but puts login and playback inside the
   // blast radius, so the script itself must refuse to touch them.

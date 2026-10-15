@@ -722,6 +722,23 @@ function applyScript(path, body) {
  *   - 没删到东西时原样返回，不重新编码，零副作用
  * ================================================================== */
 
+/**
+ * 独立版本线。
+ *
+ * 这个文件独立于主脚本演进，所以版本号也独立 —— 主模块是 1.0.5 的时候，
+ * 过滤器可能就是 1.0.3，两者没有可比性，不要混着看。
+ * 每次改这个文件都要 +1，且必须与 netease-content-filter.sgmodule 里的
+ * #!version 一致（有测试守着，不一致会直接报错）。
+ *
+ * Independent version line: this file evolves separately from the main script,
+ * so its version is not comparable to the main module's. Bumped whenever this
+ * file changes, and asserted to match the module's #!version by the test suite.
+ */
+var FILTER_VERSION = '1.0.0';
+
+// 禁用字符串。模块的「禁用字符串」参数可以覆盖（用 | 分隔多个）。
+// Full-string matches only: 「云贝」 on its own is a feature name and appears in
+// legitimate content, so a short word here would remove things it should not.
 var BANNED = (typeof $argument !== 'undefined' && $argument)
   ? String($argument).split('|').map(function (s) { return s.trim(); }).filter(Boolean)
   : ['云贝免费领取现金红包'];
@@ -870,7 +887,8 @@ function main() {
     if (typeof console !== 'undefined' && console.log) {
       console.log('[content-filter] removed ' + removedCount + ' item(s) from ' + where);
     }
-    notify('内容过滤器已生效',
+    // Version goes in the title so the running build is identifiable on sight.
+    notify('内容过滤器 v' + FILTER_VERSION + ' 已生效',
            '删除 ' + removedCount + ' 条',
            where.split('/').slice(-3).join('/'));
 

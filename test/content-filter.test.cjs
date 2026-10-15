@@ -125,5 +125,6 @@ test('removals are reported to the phone', () => {
   // survived" apart from "never ran". Without it, the two look identical.
   const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'content-filter.js'), 'utf8');
   assert.match(src, /\$notification/, 'must post a notification on removal');
-  assert.match(src, /内容过滤器已生效/, 'notification should be identifiable');
+  assert.match(src, /内容过滤器 v/, 'notification should be identifiable');
+  assert.match(src, /FILTER_VERSION/, 'the notification should name the running build');
 });
